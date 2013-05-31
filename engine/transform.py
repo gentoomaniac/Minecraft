@@ -1,11 +1,4 @@
 
-from collections import deque
-from pyglet import image
-from pyglet.graphics import TextureGroup
-from pyglet.gl import *
-from pyglet.window import key, mouse
-from pyglet.gl import *
-
 class Tools:
 
     @staticmethod
@@ -37,9 +30,9 @@ class Tools:
         """ Return a list of the texture squares for the top, bottom and side.
 
         """
-        top = tex_coord(*top)
-        bottom = tex_coord(*bottom)
-        side = tex_coord(*side)
+        top = Tools.tex_coord(*top)
+        bottom = Tools.tex_coord(*bottom)
+        side = Tools.tex_coord(*side)
         result = []
         result.extend(top)
         result.extend(bottom)
@@ -77,6 +70,6 @@ class Tools:
         sector : tuple of len 3
 
         """
-        x, y, z = normalize(position)
+        x, y, z = Tools.normalize(position)
         x, y, z = x / sectorSize, y / sectorSize, z / sectorSize
         return (x, 0, z)

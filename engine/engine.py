@@ -118,7 +118,7 @@ class Model(object):
         dx, dy, dz = vector
         previous = None
         for _ in xrange(max_distance * m):
-            key = normalize((x, y, z))
+            key =Tools.normalize((x, y, z))
             if key != previous and key in self.world:
                 return key, previous
             previous = key
@@ -153,7 +153,7 @@ class Model(object):
         if position in self.world:
             self.remove_block(position, immediate)
         self.world[position] = texture
-        self.sectors.setdefault(sectorize(position), []).append(position)
+        self.sectors.setdefault(Tools.sectorize(position, SECTOR_SIZE), []).append(position)
         if immediate:
             if self.exposed(position):
                 self.show_block(position)
@@ -171,7 +171,7 @@ class Model(object):
 
         """
         del self.world[position]
-        self.sectors[sectorize(position)].remove(position)
+        self.sectors[Tools.sectorize(position, SECTOR_SIZE)].remove(position)
         if immediate:
             if position in self.shown:
                 self.hide_block(position)
@@ -228,7 +228,7 @@ class Model(object):
 
         """
         x, y, z = position
-        vertex_data = cube_vertices(x, y, z, 0.5)
+        vertex_data = Tools.cube_vertices(x, y, z, 0.5)
         texture_data = list(texture)
         # create vertex list
         # FIXME Maybe `add_indexed()` should be used instead
@@ -339,10 +339,10 @@ class Model(object):
 
 
 GRASS = Tools.tex_coords((1, 0), (0, 1), (0, 0))
-SAND = tex_coords((1, 1), (1, 1), (1, 1))
-BRICK = tex_coords((2, 0), (2, 0), (2, 0))
-STONE = tex_coords((2, 1), (2, 1), (2, 1))
-TEST = tex_coords((0, 3), (0, 3), (0, 3))
+SAND = Tools.tex_coords((1, 1), (1, 1), (1, 1))
+BRICK = Tools.tex_coords((2, 0), (2, 0), (2, 0))
+STONE = Tools.tex_coords((2, 1), (2, 1), (2, 1))
+TEST = Tools.tex_coords((0, 3), (0, 3), (0, 3))
 
 
 
@@ -423,7 +423,8 @@ class Core(pyglet.window.Window):
         #    t = - v_0 / a
         # Use t and the desired MAX_JUMP_HEIGHT to solve for v_0 (jump speed) in
         #    s = s_0 + v_0 * t + (a * t^2) / 2
-        self.settings['jumpSpeed'] = math.sqrt(2 * self.settings['gravity'] * self.settings['maxJumHight'])
+        self.settings['jumpSpeed'] = math.sqrt(2 * self.settings['gravity'] * 
+self.settings['maxJumHight'])
         
 
         # This call schedules the `update()` method to be called
@@ -517,7 +518,7 @@ class Core(pyglet.window.Window):
 
         """
         self.model.process_queue()
-        sector = sectorize(self.position)
+        sector = Tools.sectorize(self.position, SECTOR_SIZE)
         if sector != self.sector:
             self.model.change_sectors(self.sector, sector)
             if self.sector is None:
@@ -555,9 +556,11 @@ class Core(pyglet.window.Window):
         # collisions
         x, y, z = self.position
         if self.settings['isCrouch']:
-            x, y, z = self.collide((x + dx, y + dy, z + dz), self.settings['crouchHight'])
+            x, y, z = self.collide((x + dx, y + dy, z + dz), 
+self.settings['crouchHight'])
         else:
-            x, y, z = self.collide((x + dx, y + dy, z + dz), self.settings['playerHight'])
+            x, y, z = self.collide((x + dx, y + dy, z + dz), 
+self.settings['playerHight'])
         self.position = (x, y, z)
 
     def collide(self, position, height):
@@ -583,7 +586,7 @@ class Core(pyglet.window.Window):
         # tall grass. If >= .5, you'll fall through the ground.
         pad = 0.25
         p = list(position)
-        np = normalize(position)
+        np =Tools.normalize(position)
         for face in FACES:  # check all surrounding blocks
             for i in xrange(3):  # check each dimension independently
                 if not face[i]:
@@ -787,7 +790,7 @@ class Core(pyglet.window.Window):
         block = self.model.hit_test(self.position, vector)[0]
         if block:
             x, y, z = block
-            vertex_data = cube_vertices(x, y, z, 0.51)
+            vertex_data = Tools.cube_vertices(x, y, z, 0.51)
             glColor3d(0, 0, 0)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
             pyglet.graphics.draw(24, GL_QUADS, ('v3f/static', vertex_data))
