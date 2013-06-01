@@ -10,6 +10,7 @@ from pyglet.window import key, mouse
 from pyglet.gl import *
 
 from transform import *
+from objects import *
 
 TEXTURE_PATH = 'texture.png'
 
@@ -30,6 +31,11 @@ SECTOR_SIZE = 16
 
 TERMINAL_VELOCITY = 50
 
+
+GRASS = Material("Grass", Tools.tex_coords((1, 0), (0, 1), (0, 0)), 1)
+SAND = Material("Sand", Tools.tex_coords((1, 1), (1, 1), (1, 1)), 0)
+BRICK = Material("Brick", Tools.tex_coords((2, 0), (2, 0), (2, 0)), 2)
+STONE = Material("Stone",Tools.tex_coords((2, 1), (2, 1), (2, 1)), 5)
 
 
 class Model(object):
@@ -136,7 +142,7 @@ class Model(object):
                 return True
         return False
 
-    def add_block(self, position, texture, immediate=True):
+    def add_block(self, position, material, immediate=True):
         """ Add a block with the given `texture` and `position` to the world.
 
         Parameters
@@ -152,7 +158,7 @@ class Model(object):
         """
         if position in self.world:
             self.remove_block(position, immediate)
-        self.world[position] = texture
+        self.world[position] = Block(position, material)
         self.sectors.setdefault(Tools.sectorize(position, SECTOR_SIZE), []).append(position)
         if immediate:
             if self.exposed(position):
@@ -170,12 +176,15 @@ class Model(object):
             Whether or not to immediately remove block from canvas.
 
         """
-        del self.world[position]
-        self.sectors[Tools.sectorize(position, SECTOR_SIZE)].remove(position)
-        if immediate:
-            if position in self.shown:
-                self.hide_block(position)
-            self.check_neighbors(position)
+        if self.world[position].life > 0:
+            self.world[position].life -= 1
+        else:
+            del self.world[position]
+            self.sectors[Tools.sectorize(position, SECTOR_SIZE)].remove(position)
+            if immediate:
+                if position in self.shown:
+                    self.hide_block(position)
+                self.check_neighbors(position)
 
     def check_neighbors(self, position):
         """ Check all blocks surrounding `position` and ensure their visual
@@ -208,14 +217,13 @@ class Model(object):
             Whether or not to show the block immediately.
 
         """
-        texture = self.world[position]
-        self.shown[position] = texture
+        self.shown[position] = True
         if immediate:
-            self._show_block(position, texture)
+            self._show_block(position)
         else:
-            self._enqueue(self._show_block, position, texture)
+            self._enqueue(self._show_block, position)
 
-    def _show_block(self, position, texture):
+    def _show_block(self, position):
         """ Private implementation of the `show_block()` method.
 
         Parameters
@@ -229,7 +237,7 @@ class Model(object):
         """
         x, y, z = position
         vertex_data = Tools.cube_vertices(x, y, z, 0.5)
-        texture_data = list(texture)
+        texture_data = list(self.world[position].material.texture)
         # create vertex list
         # FIXME Maybe `add_indexed()` should be used instead
         self._shown[position] = self.batch.add(24, GL_QUADS, self.group,
@@ -338,14 +346,6 @@ class Model(object):
 
 
 
-GRASS = Tools.tex_coords((1, 0), (0, 1), (0, 0))
-SAND = Tools.tex_coords((1, 1), (1, 1), (1, 1))
-BRICK = Tools.tex_coords((2, 0), (2, 0), (2, 0))
-STONE = Tools.tex_coords((2, 1), (2, 1), (2, 1))
-TEST = Tools.tex_coords((0, 3), (0, 3), (0, 3))
-
-
-
 class Core(pyglet.window.Window):
     """ This is the graphics engine
     
@@ -390,7 +390,7 @@ class Core(pyglet.window.Window):
         self.dy = 0
 
         # A list of blocks the player can place. Hit num keys to cycle.
-        self.inventory = [BRICK, GRASS, SAND, TEST]
+        self.inventory = [BRICK, GRASS, SAND]
 
         # The current block the user can place. Hit num keys to cycle.
         self.block = self.inventory[0]
