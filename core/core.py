@@ -1,4 +1,11 @@
+
+import json
+import gzip
+
 class Config():
+    """ This class handles the configuration of the game
+    
+    """
     _instance = None
     
     # app information
@@ -22,3 +29,26 @@ class Config():
              return self.configSettings[key]
         else:
              raise Exception("Setting not found!")
+         
+    def setConfValue(self, key, val):
+        if key in self.configSettings.keys():
+             self.configSettings[key] = val
+        else:
+             raise Exception("Setting not found!")
+
+
+class Savegame():
+    """ This class handles a savgame
+    
+    """
+    
+    def __init__(self, world):
+        self.path = "/home/freak/save.gz"
+        self.world = world
+        #nothing yet
+        
+    def save(self):
+        saveFile = gzip.open(self.path, 'w')
+        for coord in self.world.blocks.keys():
+            saveFile.write("%s:")
+        saveFile.close()

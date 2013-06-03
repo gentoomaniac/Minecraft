@@ -11,6 +11,7 @@ from pyglet.gl import *
 
 from transform import *
 from objects import *
+from core import *
 
 TEXTURE_PATH = 'texture.png'
 
@@ -37,6 +38,17 @@ SAND = Material("Sand", Tools.tex_coords((1, 1), (1, 1), (1, 1)), 0)
 BRICK = Material("Brick", Tools.tex_coords((2, 0), (2, 0), (2, 0)), 2)
 STONE = Material("Stone",Tools.tex_coords((2, 1), (2, 1), (2, 1)), 5)
 
+class World(object):
+    """ Representation of the World
+    
+    """
+    
+    def __init__(self):
+        self.blocks = {}
+        
+        
+        
+        
 
 class Model(object):
 
@@ -48,15 +60,11 @@ class Model(object):
         # A TextureGroup manages an OpenGL texture.
         self.group = TextureGroup(image.load(TEXTURE_PATH).get_texture())
 
-        # A mapping from position to the texture of the block at that position.
         # This defines all the blocks that are currently in the world.
-        self.world = {}
-
-        # Same mapping as `world` but only contains blocks that are shown.
-        self.shown = {}
-
+        self.world = World()
+        
         # Mapping from position to a pyglet `VertextList` for all shown blocks.
-        self._shown = {}
+        self.visible = {}
 
         # Mapping from sector to a list of positions inside that sector.
         self.sectors = {}
@@ -125,7 +133,7 @@ class Model(object):
         previous = None
         for _ in xrange(max_distance * m):
             key =Tools.normalize((x, y, z))
-            if key != previous and key in self.world:
+            if key != previous and key in self.world.blocks:
                 return key, previous
             previous = key
             x, y, z = x + dx / m, y + dy / m, z + dz / m
@@ -138,7 +146,7 @@ class Model(object):
         """
         x, y, z = position
         for dx, dy, dz in FACES:
-            if (x + dx, y + dy, z + dz) not in self.world:
+            if (x + dx, y + dy, z + dz) not in self.visible:
                 return True
         return False
 
@@ -156,9 +164,9 @@ class Model(object):
             Whether or not to draw the block immediately.
 
         """
-        if position in self.world:
+        if position in self.world.blocks:
             self.remove_block(position, immediate)
-        self.world[position] = Block(position, material)
+        self.world.blocks[position] = Block(position, material)
         self.sectors.setdefault(Tools.sectorize(position, SECTOR_SIZE), []).append(position)
         if immediate:
             if self.exposed(position):
@@ -176,13 +184,13 @@ class Model(object):
             Whether or not to immediately remove block from canvas.
 
         """
-        if self.world[position].life > 0:
-            self.world[position].life -= 1
+        if self.world.blocks[position].life > 0:
+            self.world.blocks[position].life -= 1
         else:
-            del self.world[position]
+            del self.world.blocks[position]
             self.sectors[Tools.sectorize(position, SECTOR_SIZE)].remove(position)
             if immediate:
-                if position in self.shown:
+                if position in self.visible:
                     self.hide_block(position)
                 self.check_neighbors(position)
 
@@ -196,13 +204,13 @@ class Model(object):
         x, y, z = position
         for dx, dy, dz in FACES:
             key = (x + dx, y + dy, z + dz)
-            if key not in self.world:
+            if key not in self.world.blocks:
                 continue
             if self.exposed(key):
-                if key not in self.shown:
+                if key not in self.visible:
                     self.show_block(key)
             else:
-                if key in self.shown:
+                if key in self.visible:
                     self.hide_block(key)
 
     def show_block(self, position, immediate=True):
@@ -217,7 +225,6 @@ class Model(object):
             Whether or not to show the block immediately.
 
         """
-        self.shown[position] = True
         if immediate:
             self._show_block(position)
         else:
@@ -237,10 +244,10 @@ class Model(object):
         """
         x, y, z = position
         vertex_data = Tools.cube_vertices(x, y, z, 0.5)
-        texture_data = list(self.world[position].material.texture)
+        texture_data = list(self.world.blocks[position].material.texture)
         # create vertex list
         # FIXME Maybe `add_indexed()` should be used instead
-        self._shown[position] = self.batch.add(24, GL_QUADS, self.group,
+        self.visible[position] = self.batch.add(24, GL_QUADS, self.group,
             ('v3f/static', vertex_data),
             ('t2f/static', texture_data))
 
@@ -256,7 +263,7 @@ class Model(object):
             Whether or not to immediately remove the block from the canvas.
 
         """
-        self.shown.pop(position)
+        #self.world.visible.pop(position)
         if immediate:
             self._hide_block(position)
         else:
@@ -266,7 +273,10 @@ class Model(object):
         """ Private implementation of the 'hide_block()` method.
 
         """
-        self._shown.pop(position).delete()
+        try:
+            self.visible.pop(position).delete()
+        except:
+            print "couldn't delete %s - %s" % (position, self.world.blocks[position])
 
     def show_sector(self, sector):
         """ Ensure all blocks in the given sector that should be shown are
@@ -274,7 +284,7 @@ class Model(object):
 
         """
         for position in self.sectors.get(sector, []):
-            if position not in self.shown and self.exposed(position):
+            if position not in self.visible and self.exposed(position):
                 self.show_block(position, False)
 
     def hide_sector(self, sector):
@@ -283,7 +293,7 @@ class Model(object):
 
         """
         for position in self.sectors.get(sector, []):
-            if position in self.shown:
+            if position in self.visible:
                 self.hide_block(position, False)
 
     def change_sectors(self, before, after):
@@ -294,9 +304,10 @@ class Model(object):
         """
         before_set = set()
         after_set = set()
+        # probaby # of sectors to show
         pad = 4
         for dx in xrange(-pad, pad + 1):
-            for dy in [0]:  # xrange(-pad, pad + 1):
+            for dy in xrange(-pad, pad + 1):
                 for dz in xrange(-pad, pad + 1):
                     if dx ** 2 + dy ** 2 + dz ** 2 > (pad + 1) ** 2:
                         continue
@@ -353,6 +364,12 @@ class Core(pyglet.window.Window):
 
     def __init__(self, *args, **kwargs):
         super(Core, self).__init__(*args, **kwargs)
+
+        # get config object
+        self.conf = core.Config()
+        
+        #store currently pressed keys to enable combinations
+        self.keysDown = []
 
         # Whether or not the window exclusively captures the mouse.
         self.exclusive = False
@@ -424,7 +441,7 @@ class Core(pyglet.window.Window):
         # Use t and the desired MAX_JUMP_HEIGHT to solve for v_0 (jump speed) in
         #    s = s_0 + v_0 * t + (a * t^2) / 2
         self.settings['jumpSpeed'] = math.sqrt(2 * self.settings['gravity'] * 
-self.settings['maxJumHight'])
+                self.settings['maxJumHight'])
         
 
         # This call schedules the `update()` method to be called
@@ -557,10 +574,10 @@ self.settings['maxJumHight'])
         x, y, z = self.position
         if self.settings['isCrouch']:
             x, y, z = self.collide((x + dx, y + dy, z + dz), 
-self.settings['crouchHight'])
+                self.settings['crouchHight'])
         else:
             x, y, z = self.collide((x + dx, y + dy, z + dz), 
-self.settings['playerHight'])
+                self.settings['playerHight'])
         self.position = (x, y, z)
 
     def collide(self, position, height):
@@ -599,7 +616,7 @@ self.settings['playerHight'])
                     op = list(np)
                     op[1] -= dy
                     op[i] += face[i]
-                    if tuple(op) not in self.model.world:
+                    if tuple(op) not in self.model.world.blocks:
                         continue
                     p[i] -= (d - pad) * face[i]
                     if face == (0, -1, 0) or face == (0, 1, 0):
@@ -635,7 +652,7 @@ self.settings['playerHight'])
                 if previous:
                     self.model.add_block(previous, self.block)
             elif button == pyglet.window.mouse.LEFT and block:
-                texture = self.model.world[block]
+                texture = self.model.world.blocks[block]
                 if texture != STONE:
                     self.model.remove_block(block)
         else:
@@ -672,10 +689,15 @@ self.settings['playerHight'])
             Number representing any modifying keys that were pressed.
 
         """
+        
         if symbol == key.W:
             self.strafe[0] -= 1
         elif symbol == key.S:
-            self.strafe[0] += 1
+            if modifiers == key.MOD_CTRL:
+                savegame = core.Savegame(self.model.world)
+                savegame.save()
+            else:
+                self.strafe[0] += 1
         elif symbol == key.A:
             self.strafe[1] -= 1
         elif symbol == key.D:
@@ -803,7 +825,7 @@ self.settings['playerHight'])
         x, y, z = self.position
         self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
             pyglet.clock.get_fps(), x, y, z,
-            len(self.model._shown), len(self.model.world))
+            len(self.model.visible), len(self.model.world.blocks))
         self.label.draw()
 
     def draw_reticle(self):

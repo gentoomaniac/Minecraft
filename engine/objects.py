@@ -7,7 +7,9 @@ class Block:
         self.x, self.y, self.z = position
         self.material = material
         self.life = material.sustain
-        
+        self.isVisible = True
+        # pyglet `VertextList` for shown blocks
+        self.vertex = None
         
         
 class Material:
