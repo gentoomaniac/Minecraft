@@ -7,7 +7,7 @@ class Block:
         self._position = position
         self._material = material
         self._life = material.sustain
-        self.isVisible = True
+        self._isVisible = True
         # pyglet `VertextList` for shown blocks
         self._vertex = None
         
@@ -28,6 +28,16 @@ class Block:
     
     def setVertex(self, vertex):
         self._vertex = vertex
+        print self._vertex
+        
+    def deleteVertex(self):
+        del self._vertex
         
     def getPosition(self):
         return self._position
+    
+    def isVisible(self):
+        return self._isVisible
+    
+    def setVisible(self, visible):
+        self._isVisible = visible

@@ -27,6 +27,7 @@ class World(object):
 
     def removeBlock(self, position):
         if position in self._blocks:
+            self._blocks[position].deleteVertex()
             del self._blocks[position]
         else:
             raise Exception('No block at %s' % (position,))

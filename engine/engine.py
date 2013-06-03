@@ -55,7 +55,7 @@ class Model(object):
         self.world = World()
         
         # Mapping from position to a pyglet `VertextList` for all shown blocks.
-        self.visibleWorld = World()
+        self.visibleWorld = {}
 
         # Mapping from sector to a list of positions inside that sector.
         self.sectors = {}
@@ -78,12 +78,12 @@ class Model(object):
         for x in xrange(-n, n + 1, s):
             for z in xrange(-n, n + 1, s):
                 # create a layer stone an grass everywhere.
-                self.add_block((x, y - 2, z), materials['GRASS'], immediate=False)
-                self.add_block((x, y - 3, z), materials['STONE'], immediate=False)
+                self.add_block((x, y - 2, z), materials['GRASS'])
+                self.add_block((x, y - 3, z), materials['STONE'])
                 if x in (-n, n) or z in (-n, n):
                     # create outer walls.
                     for dy in xrange(-1, 3):
-                        self.add_block((x, y + dy, z), materials['STONE'], immediate=False)
+                        self.add_block((x, y + dy, z), materials['STONE'])
 
         # generate the hills randomly
         o = n - 10
@@ -103,7 +103,7 @@ class Model(object):
                         if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
                             continue
                         try:
-                            self.add_block((x, y, z), materials[mat], immediate=False)
+                            self.add_block((x, y, z), materials[mat])
                         except:
                             print "Already a block at %s" % ((x, y, z),)
                 s -= d  # decrement side lenth so hills taper off
@@ -186,8 +186,9 @@ class Model(object):
             self.world.removeBlock(position)
             self.sectors[Tools.sectorize(position, SECTOR_SIZE)].remove(position)
             if immediate:
-                if self.visibleWorld.existsBlockAt(position):
+                if self.world.existsBlockAt(position):
                     self.hide_block(position)
+                    
                 self.check_neighbors(position)
 
     def check_neighbors(self, position):
@@ -203,10 +204,10 @@ class Model(object):
             if not self.world.existsBlockAt(key):
                 continue
             if self.exposed(key):
-                if not self.visibleWorld.existsBlockAt(key):
+                if not self.world.existsBlockAt(key):
                     self.show_block(key)
             else:
-                if self.visibleWorld.existsBlockAt(key):
+                if self.world.existsBlockAt(key):
                     self.hide_block(key)
 
     def show_block(self, position, immediate=True):
@@ -244,8 +245,9 @@ class Model(object):
             texture_data = list(self.world.getBlock(position).getTexture())
             # create vertex list
             # FIXME Maybe `add_indexed()` should be used instead
-            self.visibleWorld.setBlock(self.world.getBlock(position))
-            self.visibleWorld.getBlock(position).setVertex(self.batch.add(24, GL_QUADS, self.group,
+            self.visibleWorld[position] = True
+            self.world.getBlock(position).setVisible(True)
+            self.world.getBlock(position).setVertex(self.batch.add(24, GL_QUADS, self.group,
                 ('v3f/static', vertex_data),
                 ('t2f/static', texture_data)))
         except:
@@ -274,7 +276,8 @@ class Model(object):
 
         """
         try:
-            self.visibleWorld.removeBlock(position)
+            self.visibleWorld.pop(position)
+            self.world.getBlock(position).setVisible(False)
         except Exception, e:
             print "couldn't delete %s - %s" % (position, e)
             traceback.print_exc()
@@ -285,7 +288,7 @@ class Model(object):
 
         """
         for position in self.sectors.get(sector, []):
-            if not self.visibleWorld.existsBlockAt(position) and self.exposed(position):
+            if not self.world.existsBlockAt(position) and self.exposed(position):
                 self.show_block(position, False)
 
     def hide_sector(self, sector):
@@ -294,7 +297,7 @@ class Model(object):
 
         """
         for position in self.sectors.get(sector, []):
-            if self.visibleWorld.existsBlockAt(position):
+            if self.world.existsBlockAt(position):
                 print "hide_sector: %s" % (position,)
                 self.hide_block(position, False)
 
@@ -829,7 +832,7 @@ class Core(pyglet.window.Window):
         x, y, z = self.position
         self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d\nfocus: %s' % (
             pyglet.clock.get_fps(), x, y, z,
-            self.model.visibleWorld.getBlockCount(), self.model.world.getBlockCount(),
+            len(self.model.visibleWorld), self.model.world.getBlockCount(),
             self.focusedBlock)
         self.label.draw()
 
