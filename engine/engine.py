@@ -94,7 +94,7 @@ class Model(object):
             h = random.randint(1, 6)  # height of the hill
             s = random.randint(4, 8)  # 2 * s is the side length of the hill
             d = 1  # how quickly to taper off the hills
-            mat = random.choice(materials.materials.keys())
+            mat = random.choice(materials.keys())
             for y in xrange(c, c + h):
                 for x in xrange(a - s, a + s + 1):
                     for z in xrange(b - s, b + s + 1):
@@ -102,7 +102,10 @@ class Model(object):
                             continue
                         if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
                             continue
-                        self.add_block((x, y, z), materials[mat], immediate=False)
+                        try:
+                            self.add_block((x, y, z), materials[mat], immediate=False)
+                        except:
+                            print "Already a block at %s" % ((x, y, z),)
                 s -= d  # decrement side lenth so hills taper off
 
     def hit_test(self, position, vector, max_distance=8):
@@ -180,7 +183,7 @@ class Model(object):
         if self.world.getBlock(position).isAlive():
             self.world.getBlock(position).decreaseLife()
         else:
-            self.world.removeBlock
+            self.world.removeBlock(position)
             self.sectors[Tools.sectorize(position, SECTOR_SIZE)].remove(position)
             if immediate:
                 if self.visibleWorld.existsBlockAt(position):
@@ -236,13 +239,17 @@ class Model(object):
 
         """
         x, y, z = position
-        vertex_data = Tools.cube_vertices(x, y, z, 0.5)
-        texture_data = list(self.world.blocks[position].material.texture)
-        # create vertex list
-        # FIXME Maybe `add_indexed()` should be used instead
-        self.visible[position] = self.batch.add(24, GL_QUADS, self.group,
-            ('v3f/static', vertex_data),
-            ('t2f/static', texture_data))
+        try:
+            vertex_data = Tools.cube_vertices(x, y, z, 0.5)
+            texture_data = list(self.world.getBlock(position).getTexture())
+            # create vertex list
+            # FIXME Maybe `add_indexed()` should be used instead
+            self.visibleWorld.setBlock(self.world.getBlock(position))
+            self.visibleWorld.getBlock(position).setVertex(self.batch.add(24, GL_QUADS, self.group,
+                ('v3f/static', vertex_data),
+                ('t2f/static', texture_data)))
+        except:
+            print "couldn't show block at %s" % (position,)
 
     def hide_block(self, position, immediate=True):
         """ Hide the block at the given `position`. Hiding does not remove the
@@ -267,7 +274,7 @@ class Model(object):
 
         """
         try:
-            self.visible.pop(position).delete()
+            self.visibleWorld.removeBlock(position)
         except Exception, e:
             print "couldn't delete %s - %s" % (position, e)
             traceback.print_exc()
@@ -278,7 +285,7 @@ class Model(object):
 
         """
         for position in self.sectors.get(sector, []):
-            if position not in self.visible and self.exposed(position):
+            if not self.visibleWorld.existsBlockAt(position) and self.exposed(position):
                 self.show_block(position, False)
 
     def hide_sector(self, sector):
@@ -287,7 +294,7 @@ class Model(object):
 
         """
         for position in self.sectors.get(sector, []):
-            if position in self.visible:
+            if self.visibleWorld.existsBlockAt(position):
                 print "hide_sector: %s" % (position,)
                 self.hide_block(position, False)
 
@@ -402,10 +409,10 @@ class Core(pyglet.window.Window):
         self.dy = 0
 
         # A list of blocks the player can place. Hit num keys to cycle.
-        self.inventory = [materials.keys()]
+        self.inventory = materials.keys()
 
         # The current block the user can place. Hit num keys to cycle.
-        self.block = self.inventory[0]
+        self.block = materials[self.inventory[0]]
 
         # Convenience list of num keys.
         self.num_keys = [
@@ -613,7 +620,7 @@ class Core(pyglet.window.Window):
                     op = list(np)
                     op[1] -= dy
                     op[i] += face[i]
-                    if tuple(op) not in self.model.world.blocks:
+                    if not self.model.world.existsBlockAt(tuple(op)):
                         continue
                     p[i] -= (d - pad) * face[i]
                     if face == (0, -1, 0) or face == (0, 1, 0):
@@ -647,11 +654,10 @@ class Core(pyglet.window.Window):
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
                 if previous:
+                    print self.block
                     self.model.add_block(previous, self.block)
             elif button == pyglet.window.mouse.LEFT and block:
-                texture = self.model.world.blocks[block]
-                if texture != STONE:
-                    self.model.remove_block(block)
+                self.model.remove_block(block)
         else:
             self.set_exclusive_mouse(True)
 
@@ -713,7 +719,7 @@ class Core(pyglet.window.Window):
             self.flying = not self.flying
         elif symbol in self.num_keys:
             index = (symbol - self.num_keys[0]) % len(self.inventory)
-            self.block = self.inventory[index]
+            self.block = materials[self.inventory[index]]
 
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
@@ -823,7 +829,7 @@ class Core(pyglet.window.Window):
         x, y, z = self.position
         self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d\nfocus: %s' % (
             pyglet.clock.get_fps(), x, y, z,
-            len(self.model.visible), len(self.model.world.blocks),
+            self.model.visibleWorld.getBlockCount(), self.model.world.getBlockCount(),
             self.focusedBlock)
         self.label.draw()
 

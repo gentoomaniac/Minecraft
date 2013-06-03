@@ -20,10 +20,14 @@ class World(object):
             return self._blocks[position]
         else:
             return None
+    
+    def setBlock(self, block):
+        self._blocks[block.getPosition()] = block
+            
 
     def removeBlock(self, position):
         if position in self._blocks:
-            self._blocks[position].delete()
+            del self._blocks[position]
         else:
             raise Exception('No block at %s' % (position,))
         
@@ -32,3 +36,6 @@ class World(object):
             return True
         else:
             return False
+        
+    def getBlockCount(self):
+        return len(self._blocks)

@@ -4,12 +4,12 @@ class Block:
     """
 
     def __init__(self, position, material):
-        self.x, self.y, self.z = position
-        self.material = material
+        self._position = position
+        self._material = material
         self._life = material.sustain
         self.isVisible = True
         # pyglet `VertextList` for shown blocks
-        self.vertex = None
+        self._vertex = None
         
     def decreaseLife(self, step=1):
         self._life -= step
@@ -19,3 +19,15 @@ class Block:
             return True
         else:
             return False
+
+    def getTexture(self):
+        return self._material.texture
+    
+    def getVertex(self):
+        return self._vertex
+    
+    def setVertex(self, vertex):
+        self._vertex = vertex
+        
+    def getPosition(self):
+        return self._position
