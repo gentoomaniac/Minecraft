@@ -6,18 +6,16 @@ class Block:
     def __init__(self, position, material):
         self.x, self.y, self.z = position
         self.material = material
-        self.life = material.sustain
+        self._life = material.sustain
         self.isVisible = True
         # pyglet `VertextList` for shown blocks
         self.vertex = None
         
+    def decreaseLife(self, step=1):
+        self._life -= step
         
-class Material:
-    """ Contains matirial information
-    
-    """
-    
-    def __init__(self, name, texture, sustain=0):
-        self.name = name
-        self.texture = texture
-        self.sustain = sustain
+    def isAlive(self):
+        if self._life > 0:
+            return True
+        else:
+            return False

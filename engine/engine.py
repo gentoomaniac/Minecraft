@@ -1,6 +1,7 @@
 import math
 import random
 import time
+import traceback
 
 from collections import deque
 from pyglet import image
@@ -12,6 +13,9 @@ from pyglet.gl import *
 from transform import *
 from objects import *
 from core import *
+from world import *
+from materials import *
+
 
 TEXTURE_PATH = 'texture.png'
 
@@ -33,22 +37,9 @@ SECTOR_SIZE = 16
 TERMINAL_VELOCITY = 50
 
 
-GRASS = Material("Grass", Tools.tex_coords((1, 0), (0, 1), (0, 0)), 1)
-SAND = Material("Sand", Tools.tex_coords((1, 1), (1, 1), (1, 1)), 0)
-BRICK = Material("Brick", Tools.tex_coords((2, 0), (2, 0), (2, 0)), 2)
-STONE = Material("Stone",Tools.tex_coords((2, 1), (2, 1), (2, 1)), 5)
 
-class World(object):
-    """ Representation of the World
-    
-    """
-    
-    def __init__(self):
-        self.blocks = {}
-        
-        
-        
-        
+
+
 
 class Model(object):
 
@@ -64,7 +55,7 @@ class Model(object):
         self.world = World()
         
         # Mapping from position to a pyglet `VertextList` for all shown blocks.
-        self.visible = {}
+        self.visibleWorld = World()
 
         # Mapping from sector to a list of positions inside that sector.
         self.sectors = {}
@@ -82,15 +73,17 @@ class Model(object):
         n = 80  # 1/2 width and height of world
         s = 1  # step size
         y = 0  # initial y height
+        
+        # create an n x n sized plane with two layers
         for x in xrange(-n, n + 1, s):
             for z in xrange(-n, n + 1, s):
                 # create a layer stone an grass everywhere.
-                self.add_block((x, y - 2, z), GRASS, immediate=False)
-                self.add_block((x, y - 3, z), STONE, immediate=False)
+                self.add_block((x, y - 2, z), materials['GRASS'], immediate=False)
+                self.add_block((x, y - 3, z), materials['STONE'], immediate=False)
                 if x in (-n, n) or z in (-n, n):
                     # create outer walls.
-                    for dy in xrange(-2, 3):
-                        self.add_block((x, y + dy, z), STONE, immediate=False)
+                    for dy in xrange(-1, 3):
+                        self.add_block((x, y + dy, z), materials['STONE'], immediate=False)
 
         # generate the hills randomly
         o = n - 10
@@ -101,7 +94,7 @@ class Model(object):
             h = random.randint(1, 6)  # height of the hill
             s = random.randint(4, 8)  # 2 * s is the side length of the hill
             d = 1  # how quickly to taper off the hills
-            t = random.choice([GRASS, SAND, BRICK])
+            mat = random.choice(materials.materials.keys())
             for y in xrange(c, c + h):
                 for x in xrange(a - s, a + s + 1):
                     for z in xrange(b - s, b + s + 1):
@@ -109,7 +102,7 @@ class Model(object):
                             continue
                         if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
                             continue
-                        self.add_block((x, y, z), t, immediate=False)
+                        self.add_block((x, y, z), materials[mat], immediate=False)
                 s -= d  # decrement side lenth so hills taper off
 
     def hit_test(self, position, vector, max_distance=8):
@@ -132,8 +125,8 @@ class Model(object):
         dx, dy, dz = vector
         previous = None
         for _ in xrange(max_distance * m):
-            key =Tools.normalize((x, y, z))
-            if key != previous and key in self.world.blocks:
+            key = Tools.normalize((x, y, z))
+            if key != previous and self.world.existsBlockAt(key):
                 return key, previous
             previous = key
             x, y, z = x + dx / m, y + dy / m, z + dz / m
@@ -146,7 +139,7 @@ class Model(object):
         """
         x, y, z = position
         for dx, dy, dz in FACES:
-            if (x + dx, y + dy, z + dz) not in self.visible:
+            if not self.world.existsBlockAt((x + dx, y + dy, z + dz)):
                 return True
         return False
 
@@ -164,9 +157,9 @@ class Model(object):
             Whether or not to draw the block immediately.
 
         """
-        if position in self.world.blocks:
+        if self.world.existsBlockAt(position):
             self.remove_block(position, immediate)
-        self.world.blocks[position] = Block(position, material)
+        self.world.addBlock(position, material)
         self.sectors.setdefault(Tools.sectorize(position, SECTOR_SIZE), []).append(position)
         if immediate:
             if self.exposed(position):
@@ -184,13 +177,13 @@ class Model(object):
             Whether or not to immediately remove block from canvas.
 
         """
-        if self.world.blocks[position].life > 0:
-            self.world.blocks[position].life -= 1
+        if self.world.getBlock(position).isAlive():
+            self.world.getBlock(position).decreaseLife()
         else:
-            del self.world.blocks[position]
+            self.world.removeBlock
             self.sectors[Tools.sectorize(position, SECTOR_SIZE)].remove(position)
             if immediate:
-                if position in self.visible:
+                if self.visibleWorld.existsBlockAt(position):
                     self.hide_block(position)
                 self.check_neighbors(position)
 
@@ -204,13 +197,13 @@ class Model(object):
         x, y, z = position
         for dx, dy, dz in FACES:
             key = (x + dx, y + dy, z + dz)
-            if key not in self.world.blocks:
+            if not self.world.existsBlockAt(key):
                 continue
             if self.exposed(key):
-                if key not in self.visible:
+                if not self.visibleWorld.existsBlockAt(key):
                     self.show_block(key)
             else:
-                if key in self.visible:
+                if self.visibleWorld.existsBlockAt(key):
                     self.hide_block(key)
 
     def show_block(self, position, immediate=True):
@@ -275,8 +268,9 @@ class Model(object):
         """
         try:
             self.visible.pop(position).delete()
-        except:
-            print "couldn't delete %s - %s" % (position, self.world.blocks[position])
+        except Exception, e:
+            print "couldn't delete %s - %s" % (position, e)
+            traceback.print_exc()
 
     def show_sector(self, sector):
         """ Ensure all blocks in the given sector that should be shown are
@@ -294,6 +288,7 @@ class Model(object):
         """
         for position in self.sectors.get(sector, []):
             if position in self.visible:
+                print "hide_sector: %s" % (position,)
                 self.hide_block(position, False)
 
     def change_sectors(self, before, after):
@@ -407,7 +402,7 @@ class Core(pyglet.window.Window):
         self.dy = 0
 
         # A list of blocks the player can place. Hit num keys to cycle.
-        self.inventory = [BRICK, GRASS, SAND]
+        self.inventory = [materials.keys()]
 
         # The current block the user can place. Hit num keys to cycle.
         self.block = self.inventory[0]
@@ -443,6 +438,8 @@ class Core(pyglet.window.Window):
         self.settings['jumpSpeed'] = math.sqrt(2 * self.settings['gravity'] * 
                 self.settings['maxJumHight'])
         
+        # position of block in focus to print in lable
+        self.focusedBlock = tuple()
 
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
@@ -812,6 +809,7 @@ class Core(pyglet.window.Window):
         block = self.model.hit_test(self.position, vector)[0]
         if block:
             x, y, z = block
+            self.focusedBlock = block
             vertex_data = Tools.cube_vertices(x, y, z, 0.51)
             glColor3d(0, 0, 0)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
@@ -823,9 +821,10 @@ class Core(pyglet.window.Window):
 
         """
         x, y, z = self.position
-        self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
+        self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d\nfocus: %s' % (
             pyglet.clock.get_fps(), x, y, z,
-            len(self.model.visible), len(self.model.world.blocks))
+            len(self.model.visible), len(self.model.world.blocks),
+            self.focusedBlock)
         self.label.draw()
 
     def draw_reticle(self):
