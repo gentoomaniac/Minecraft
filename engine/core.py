@@ -2,7 +2,7 @@
 import json
 import gzip
 
-class Config():
+class Config(object):
     """ This class handles the configuration of the game
     
     """
@@ -37,7 +37,7 @@ class Config():
              raise Exception("Setting not found!")
 
 
-class Savegame():
+class Savegame(object):
     """ This class handles a savgame
     
     """

@@ -1,5 +1,5 @@
 from transform import *
-class Material:
+class Material(object):
     """ Contains matirial information
     
     """

@@ -9,10 +9,8 @@ class World(object):
         
     def addBlock(self, position, material):
         if position not in self._blocks:
-            print "adding block at %s" % (position,)
             self._blocks[position] = Block(position, material)
         else:
-            print "Total number of blocks %i" % (len(self._blocks),)
             raise Exception('Already a block at %s' % (position,))
 
     def getBlock(self, position):

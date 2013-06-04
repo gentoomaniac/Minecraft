@@ -2,6 +2,7 @@ import math
 import random
 import time
 import traceback
+import logging
 
 from collections import deque
 from pyglet import image
@@ -12,7 +13,7 @@ from pyglet.gl import *
 
 from transform import *
 from objects import *
-from core import *
+from logger import *
 from world import *
 from materials import *
 
@@ -43,7 +44,10 @@ TERMINAL_VELOCITY = 50
 
 class Model(object):
 
+    @report
     def __init__(self):
+        
+        self.log = logging.getLogger(__name__)
 
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
@@ -66,10 +70,12 @@ class Model(object):
 
         self._initialize()
 
+
     def _initialize(self):
         """ Initialize the world by placing all the blocks.
 
         """
+        self.log.debug("Initializing level...")
         n = 80  # 1/2 width and height of world
         s = 1  # step size
         y = 0  # initial y height
@@ -105,7 +111,7 @@ class Model(object):
                         try:
                             self.add_block((x, y, z), materials[mat])
                         except:
-                            print "Already a block at %s" % ((x, y, z),)
+                            self.log.debug("Already a block at %s" % ((x, y, z),))
                 s -= d  # decrement side lenth so hills taper off
 
     def hit_test(self, position, vector, max_distance=8):
@@ -169,6 +175,7 @@ class Model(object):
                 self.show_block(position)
             self.check_neighbors(position)
 
+    @report
     def remove_block(self, position, immediate=True):
         """ Remove the block at the given `position`.
 
@@ -191,6 +198,7 @@ class Model(object):
                     
                 self.check_neighbors(position)
 
+
     def check_neighbors(self, position):
         """ Check all blocks surrounding `position` and ensure their visual
         state is current. This means hiding blocks that are not exposed and
@@ -210,6 +218,7 @@ class Model(object):
                 if self.world.existsBlockAt(key):
                     self.hide_block(key)
 
+
     def show_block(self, position, immediate=True):
         """ Show the block at the given `position`. This method assumes the
         block has already been added with add_block()
@@ -226,6 +235,7 @@ class Model(object):
             self._show_block(position)
         else:
             self._enqueue(self._show_block, position)
+
 
     def _show_block(self, position):
         """ Private implementation of the `show_block()` method.
@@ -251,8 +261,10 @@ class Model(object):
                 ('v3f/static', vertex_data),
                 ('t2f/static', texture_data)))
         except:
-            print "couldn't show block at %s" % (position,)
+            self.log.error("No block at %s" % (position,))
 
+
+    @report
     def hide_block(self, position, immediate=True):
         """ Hide the block at the given `position`. Hiding does not remove the
         block from the world.
@@ -271,6 +283,8 @@ class Model(object):
         else:
             self._enqueue(self._hide_block, position)
 
+
+    @report
     def _hide_block(self, position):
         """ Private implementation of the 'hide_block()` method.
 
@@ -279,8 +293,7 @@ class Model(object):
             self.visibleWorld.pop(position)
             self.world.getBlock(position).setVisible(False)
         except Exception, e:
-            print "couldn't delete %s - %s" % (position, e)
-            traceback.print_exc()
+            self.log.error("No block at %s" % (position,))
 
     def show_sector(self, sector):
         """ Ensure all blocks in the given sector that should be shown are
@@ -290,7 +303,8 @@ class Model(object):
         for position in self.sectors.get(sector, []):
             if not self.world.existsBlockAt(position) and self.exposed(position):
                 self.show_block(position, False)
-
+                                
+                                
     def hide_sector(self, sector):
         """ Ensure all blocks in the given sector that should be hidden are
         removed from the canvas.
@@ -298,8 +312,7 @@ class Model(object):
         """
         for position in self.sectors.get(sector, []):
             if self.world.existsBlockAt(position):
-                print "hide_sector: %s" % (position,)
-                self.hide_block(position, False)
+                self.hide_block(position, True)
 
     def change_sectors(self, before, after):
         """ Move from sector `before` to sector `after`. A sector is a
@@ -353,6 +366,7 @@ class Model(object):
         while self.queue and time.clock() - start < 1.0 / TICKS_PER_SEC:
             self._dequeue()
 
+
     def process_entire_queue(self):
         """ Process the entire queue with no breaks.
 
@@ -371,7 +385,7 @@ class Core(pyglet.window.Window):
         super(Core, self).__init__(*args, **kwargs)
 
         # get config object
-        self.conf = core.Config()
+        self.conf = Config()
         
         #store currently pressed keys to enable combinations
         self.keysDown = []
@@ -657,7 +671,6 @@ class Core(pyglet.window.Window):
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
                 if previous:
-                    print self.block
                     self.model.add_block(previous, self.block)
             elif button == pyglet.window.mouse.LEFT and block:
                 self.model.remove_block(block)

@@ -1,4 +1,4 @@
-class Block:
+class Block(object):
     """ will hold a block object
 
     """
@@ -28,7 +28,6 @@ class Block:
     
     def setVertex(self, vertex):
         self._vertex = vertex
-        print self._vertex
         
     def deleteVertex(self):
         del self._vertex

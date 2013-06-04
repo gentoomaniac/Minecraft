@@ -1,23 +1,33 @@
 #!/usr/bin/env python                                                              
 # -*- coding: utf-8 -*-
 
-import sys                                                                         
-import syslog                                                                      
+import logging
+import sys
+import syslog
 from optparse import OptionParser
 
-from core import *
 from engine import *
-                                                                                   
+
 def main():
+    """ prepare logging obkect
+    """
+    logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s\t%(name)s\t: %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S',
+                    filename='debug.log')
+    log = logging.getLogger(__name__)
+    
     """ Create config object and parse command line options
     """
-    conf = core.Config()
+    conf = engine.Config()
     parser = OptionParser()
     parser.add_option("-l", "--level", dest="level",
                     help="load level", metavar="FILE")
     
-    gfx = engine.Core(width=conf.getConfValue('screenWidth'), height=conf.getConfValue('screenWidth'), caption="%s v%s" % (conf.APP_NAME, conf.APP_VERSION), resizable=conf.getConfValue('resizeable'))
+    log.debug('Creating core object')
+    gfx = engine.Core()
     # Hide the mouse cursor and prevent the mouse from leaving the window.
+    log.debug('Setting up core object')
     gfx.set_exclusive_mouse(True)
     gfx.setup()
 
