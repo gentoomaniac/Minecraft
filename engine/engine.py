@@ -175,7 +175,7 @@ class Model(object):
                 self.show_block(position)
             self.check_neighbors(position)
 
-    @report
+
     def remove_block(self, position, immediate=True):
         """ Remove the block at the given `position`.
 
@@ -190,13 +190,13 @@ class Model(object):
         if self.world.getBlock(position).isAlive():
             self.world.getBlock(position).decreaseLife()
         else:
-            self.world.removeBlock(position)
-            self.sectors[Tools.sectorize(position, SECTOR_SIZE)].remove(position)
             if immediate:
                 if self.world.existsBlockAt(position):
                     self.hide_block(position)
                     
                 self.check_neighbors(position)
+            self.world.removeBlock(position)
+            self.sectors[Tools.sectorize(position, SECTOR_SIZE)].remove(position)
 
 
     def check_neighbors(self, position):
@@ -264,7 +264,6 @@ class Model(object):
             self.log.error("No block at %s" % (position,))
 
 
-    @report
     def hide_block(self, position, immediate=True):
         """ Hide the block at the given `position`. Hiding does not remove the
         block from the world.
@@ -284,7 +283,6 @@ class Model(object):
             self._enqueue(self._hide_block, position)
 
 
-    @report
     def _hide_block(self, position):
         """ Private implementation of the 'hide_block()` method.
 

@@ -11,6 +11,10 @@ class Block(object):
         # pyglet `VertextList` for shown blocks
         self._vertex = None
         
+    def destroy(self):
+        if self._vertex is not None:
+            self._vertex.delete()
+        
     def decreaseLife(self, step=1):
         self._life -= step
         
