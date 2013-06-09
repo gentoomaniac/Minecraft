@@ -10,8 +10,8 @@ class Material(object):
         self.sustain = sustain
 
 materials = {
-    'GRASS': Material("Grass", Tools.tex_coords((1, 0), (0, 1), (0, 0)), 1), 
-    'SAND': Material("Sand", Tools.tex_coords((1, 1), (1, 1), (1, 1)), 0),
-    'BRICK': Material("Brick", Tools.tex_coords((2, 0), (2, 0), (2, 0)), 2),
-    'STONE': Material("Stone",Tools.tex_coords((2, 1), (2, 1), (2, 1)), 5)
+    'Grass': Material("Grass", Tools.tex_coords((1, 0), (0, 1), (0, 0)), 1), 
+    'Sand': Material("Sand", Tools.tex_coords((1, 1), (1, 1), (1, 1)), 0),
+    'Brick': Material("Brick", Tools.tex_coords((2, 0), (2, 0), (2, 0)), 2),
+    'Stone': Material("Stone",Tools.tex_coords((2, 1), (2, 1), (2, 1)), 4)
 }

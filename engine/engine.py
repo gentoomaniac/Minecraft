@@ -16,7 +16,7 @@ from objects import *
 from logger import *
 from world import *
 from materials import *
-
+from core import *
 
 TEXTURE_PATH = 'texture.png'
 
@@ -55,11 +55,7 @@ class Model(object):
         # A TextureGroup manages an OpenGL texture.
         self.group = TextureGroup(image.load(TEXTURE_PATH).get_texture())
 
-        # This defines all the blocks that are currently in the world.
-        self.world = World()
         
-        # Mapping from position to a pyglet `VertextList` for all shown blocks.
-        self.visibleWorld = {}
 
         # Mapping from sector to a list of positions inside that sector.
         self.sectors = {}
@@ -68,7 +64,24 @@ class Model(object):
         # _show_block() and _hide_block() calls
         self.queue = deque()
 
-        self._initialize()
+        
+        # all shown blocks.
+        self.visibleWorld = {}
+        
+        # This defines all the blocks that are currently in the world.
+        self.world = Savegame.load()
+        if self.world is None:
+            self.log.debug("Couldn't load a savegame. Creating new world ...")
+            self.world = World()
+            self.visibleWorld = {}
+            self._initialize()
+        else:
+            # make blocks visible after loading
+            for position in self.world.getBlockPositions():
+                # sectorize blocks
+                self.sectors.setdefault(Tools.sectorize(position, SECTOR_SIZE), []).append(position)
+                if self.world.getBlock(position).isVisible():
+                    self.show_block(position)
 
 
     def _initialize(self):
@@ -84,35 +97,33 @@ class Model(object):
         for x in xrange(-n, n + 1, s):
             for z in xrange(-n, n + 1, s):
                 # create a layer stone an grass everywhere.
-                self.add_block((x, y - 2, z), materials['GRASS'])
-                self.add_block((x, y - 3, z), materials['STONE'])
+                self.add_block((x, y - 2, z), materials['Grass'])
+                self.add_block((x, y - 3, z), materials['Stone'])
                 if x in (-n, n) or z in (-n, n):
                     # create outer walls.
                     for dy in xrange(-1, 3):
-                        self.add_block((x, y + dy, z), materials['STONE'])
+                        self.add_block((x, y + dy, z), materials['Stone'])
 
         # generate the hills randomly
-        o = n - 10
-        for _ in xrange(120):
-            a = random.randint(-o, o)  # x position of the hill
-            b = random.randint(-o, o)  # z position of the hill
-            c = -1  # base of the hill
-            h = random.randint(1, 6)  # height of the hill
-            s = random.randint(4, 8)  # 2 * s is the side length of the hill
-            d = 1  # how quickly to taper off the hills
-            mat = random.choice(materials.keys())
-            for y in xrange(c, c + h):
-                for x in xrange(a - s, a + s + 1):
-                    for z in xrange(b - s, b + s + 1):
-                        if (x - a) ** 2 + (z - b) ** 2 > (s + 1) ** 2:
-                            continue
-                        if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
-                            continue
-                        try:
-                            self.add_block((x, y, z), materials[mat])
-                        except:
-                            self.log.debug("Already a block at %s" % ((x, y, z),))
-                s -= d  # decrement side lenth so hills taper off
+        #o = n - 10
+        #for _ in xrange(120):
+            #a = random.randint(-o, o)  # x position of the hill
+            #b = random.randint(-o, o)  # z position of the hill
+            #c = -1  # base of the hill
+            #h = random.randint(1, 6)  # height of the hill
+            #s = random.randint(4, 8)  # 2 * s is the side length of the hill
+            #d = 1  # how quickly to taper off the hills
+            #mat = random.choice(materials.keys())
+            #for y in xrange(c, c + h):
+                #for x in xrange(a - s, a + s + 1):
+                    #for z in xrange(b - s, b + s + 1):
+                        #if (x - a) ** 2 + (z - b) ** 2 > (s + 1) ** 2:
+                            #continue
+                        #if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
+                            #continue
+                        #if not self.world.existsBlockAt((x, y, z)):
+                            #self.add_block((x, y, z), materials[mat])
+                #s -= d  # decrement side lenth so hills taper off
 
     def hit_test(self, position, vector, max_distance=8):
         """ Line of sight search from current position. If a block is
@@ -380,13 +391,17 @@ class Core(pyglet.window.Window):
     """
 
     def __init__(self, *args, **kwargs):
-        super(Core, self).__init__(*args, **kwargs)
-
         # get config object
-        self.conf = Config()
+        self.conf = EngineConfig()
         
-        #store currently pressed keys to enable combinations
-        self.keysDown = []
+        super(Core, self).__init__(width=self.conf.getConfValue('screenWidth'),
+               height=self.conf.getConfValue('screenHeight'),
+               caption="%s v%s" % (self.conf.APP_NAME, self.conf.APP_VERSION),
+               resizable=self.conf.getConfValue('resizeable'))
+
+        
+        # is player crouched or normal standing?
+        self.isCrouch = False
 
         # Whether or not the window exclusively captures the mouse.
         self.exclusive = False
@@ -441,24 +456,7 @@ class Core(pyglet.window.Window):
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18,
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top',
             color=(0, 0, 0, 255))
-        
-        self.settings = {}
-        self.settings['walkingSpeed'] = 5
-        self.settings['flyingSpeed'] = 15
-        self.settings['gravity'] = 15.0
-        self.settings['playerHight'] = 2
-        self.settings['isCrouch'] = False
-        self.settings['crouchHight'] = 1
-        self.settings['maxJumHight'] = 1.0
-        # To derive the formula for calculating jump speed, first solve
-        #    v_t = v_0 + a * t
-        # for the time at which you achieve maximum height, where a is the acceleration
-        # due to gravity and v_t = 0. This gives:
-        #    t = - v_0 / a
-        # Use t and the desired MAX_JUMP_HEIGHT to solve for v_0 (jump speed) in
-        #    s = s_0 + v_0 * t + (a * t^2) / 2
-        self.settings['jumpSpeed'] = math.sqrt(2 * self.settings['gravity'] * 
-                self.settings['maxJumHight'])
+
         
         # position of block in focus to print in lable
         self.focusedBlock = tuple()
@@ -466,18 +464,6 @@ class Core(pyglet.window.Window):
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
         pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
-        
-    def setSetting(self, key, val):
-        if key in self.settings.keys():
-             self.settings[key] = val
-        else:
-             raise Exception("Setting not found!")
-         
-    def getSetting(self, key):
-        if key in self.settings.keys():
-             return self.settings[key]
-        else:
-             raise Exception("Setting not found!")
 
     def set_exclusive_mouse(self, exclusive):
         """ If `exclusive` is True, the game will capture the mouse, if False
@@ -576,7 +562,7 @@ class Core(pyglet.window.Window):
 
         """
         # walking
-        speed = self.settings['flyingSpeed'] if self.flying else self.settings['walkingSpeed']
+        speed = self.conf.getConfValue('flyingSpeed') if self.flying else self.conf.getConfValue('walkingSpeed')
         d = dt * speed # distance covered this tick.
         dx, dy, dz = self.get_motion_vector()
         # New position in space, before accounting for gravity.
@@ -586,17 +572,17 @@ class Core(pyglet.window.Window):
             # Update your vertical speed: if you are falling, speed up until you
             # hit terminal velocity; if you are jumping, slow down until you
             # start falling.
-            self.dy -= dt * self.settings['gravity']
+            self.dy -= dt * self.conf.getConfValue('gravity')
             self.dy = max(self.dy, -TERMINAL_VELOCITY)
             dy += self.dy * dt
         # collisions
         x, y, z = self.position
-        if self.settings['isCrouch']:
+        if self.isCrouch:
             x, y, z = self.collide((x + dx, y + dy, z + dz), 
-                self.settings['crouchHight'])
+                self.conf.getConfValue('crouchHight'))
         else:
             x, y, z = self.collide((x + dx, y + dy, z + dz), 
-                self.settings['playerHight'])
+                self.conf.getConfValue('playerHight'))
         self.position = (x, y, z)
 
     def collide(self, position, height):
@@ -711,8 +697,7 @@ class Core(pyglet.window.Window):
             self.strafe[0] -= 1
         elif symbol == key.S:
             if modifiers == key.MOD_CTRL:
-                savegame = core.Savegame(self.model.world)
-                savegame.save()
+                Savegame.save(self.model.world)
             else:
                 self.strafe[0] += 1
         elif symbol == key.A:
@@ -720,13 +705,19 @@ class Core(pyglet.window.Window):
         elif symbol == key.D:
             self.strafe[1] += 1
         elif symbol == key.C:
-            self.settings['isCrouch'] = True
-            pos = list(self.position)
-            pos[1] -= self.settings['playerHight'] - self.settings['crouchHight']
-            self.position = tuple(pos)
+            if modifiers == key.MOD_CTRL:
+                self.conf.saveConfig()
+            else:
+                self.isCrouch = True
+                pos = list(self.position)
+                pos[1] -= self.conf.getConfValue('playerHight') - self.conf.getConfValue('crouchHight')
+                self.position = tuple(pos)
+        elif symbol == key.Q:
+            self.conf.saveConfig()
+                #pyglet.app.exit()
         elif symbol == key.SPACE:
             if self.dy == 0:
-                self.dy = self.settings['jumpSpeed']
+                self.dy = self.conf.getConfValue('jumpSpeed')
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
         elif symbol == key.TAB:
@@ -750,16 +741,19 @@ class Core(pyglet.window.Window):
         if symbol == key.W:
             self.strafe[0] += 1
         elif symbol == key.S:
-            self.strafe[0] -= 1
+            if not modifiers == key.MOD_CTRL:
+                self.strafe[0] -= 1
         elif symbol == key.A:
             self.strafe[1] += 1
         elif symbol == key.D:
             self.strafe[1] -= 1
         elif symbol == key.C:
-            self.settings['isCrouch'] = False
-            pos = list(self.position)
-            pos[1] += self.settings['playerHight'] - self.settings['crouchHight']
-            self.position = tuple(pos)
+            if not modifiers == key.MOD_CTRL:
+                self.isCrouch = False
+                pos = list(self.position)
+                pos[1] += self.conf.getConfValue('playerHight') - self.conf.getConfValue('crouchHight')
+                self.position = tuple(pos)
+                
 
     def on_resize(self, width, height):
         """ Called when the window is resized to a new `width` and `height`.
@@ -841,10 +835,16 @@ class Core(pyglet.window.Window):
 
         """
         x, y, z = self.position
-        self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d\nfocus: %s' % (
-            pyglet.clock.get_fps(), x, y, z,
-            len(self.model.visibleWorld), self.model.world.getBlockCount(),
-            self.focusedBlock)
+        if self.model.world.getBlock(self.focusedBlock) is not None:
+            self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d -- focus: %s - %s - %i' % (
+                pyglet.clock.get_fps(), x, y, z,
+                len(self.model.visibleWorld), self.model.world.getBlockCount(),
+                self.focusedBlock, self.model.world.getBlock(self.focusedBlock).getMaterial(),
+                self.model.world.getBlock(self.focusedBlock).getLife())
+        else:
+            self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
+                pyglet.clock.get_fps(), x, y, z,
+                len(self.model.visibleWorld), self.model.world.getBlockCount())
         self.label.draw()
 
     def draw_reticle(self):

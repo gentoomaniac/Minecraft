@@ -10,6 +10,7 @@ class World(object):
     def addBlock(self, position, material):
         if position not in self._blocks:
             self._blocks[position] = Block(position, material)
+            self._blocks[position].setVisible(True)
         else:
             raise Exception('Already a block at %s' % (position,))
 
@@ -38,3 +39,6 @@ class World(object):
         
     def getBlockCount(self):
         return len(self._blocks)
+    
+    def getBlockPositions(self):
+        return self._blocks.keys()

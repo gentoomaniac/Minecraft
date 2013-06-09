@@ -3,13 +3,14 @@
 
 import logging
 import sys
+import os
 import syslog
 from optparse import OptionParser
 
 from engine import *
 
 def main():
-    """ prepare logging obkect
+    """ prepare logging object
     """
     logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s\t%(name)s\t: %(message)s',
@@ -17,9 +18,14 @@ def main():
                     filename='debug.log')
     log = logging.getLogger(__name__)
     
+    
+    # get config object
+    conf = core.EngineConfig()
+    conf.setPath(os.path.abspath(os.path.join(os.path.dirname(__file__))))
+    conf.loadConfig()
+    
     """ Create config object and parse command line options
     """
-    conf = engine.Config()
     parser = OptionParser()
     parser.add_option("-l", "--level", dest="level",
                     help="load level", metavar="FILE")
