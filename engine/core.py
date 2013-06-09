@@ -111,6 +111,7 @@ class Savegame(object):
         try:
             saveFile = gzip.open("%s/%s" % (EngineConfig().getPath(),Savegame.NAME), 'w')
             log.debug('writing data')
+            saveFile.write("%s\n" % (world.toJson(),))
             for coord in world.getBlockPositions():
                 saveFile.write("%s\n" % (world.getBlock(coord).toJson(),))
             saveFile.close()
@@ -124,6 +125,7 @@ class Savegame(object):
         world = World()
         try:
             saveFile = gzip.open("%s/%s" % (EngineConfig().getPath(),Savegame.NAME), 'r')
+            world.fromJson(saveFile.readline())
             for line in saveFile.readlines():
                 tmp = Block()
                 tmp.fromJson(line)

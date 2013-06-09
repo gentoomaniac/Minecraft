@@ -33,7 +33,7 @@ FACES = [
 TICKS_PER_SEC = 60
 
 # Size of sectors used to ease block loading.
-SECTOR_SIZE = 16
+SECTOR_SIZE = 32
 
 TERMINAL_VELOCITY = 50
 
@@ -414,12 +414,9 @@ class Core(pyglet.window.Window):
         #
         # First element is -1 when moving forward, 1 when moving back, and 0
         # otherwise. The second element is -1 when moving left, 1 when moving
-        # right, and 0 otherwise.
-        self.strafe = [0, 0]
-
-        # Current (x, y, z) position in the world, specified with floats. Note
-        # that, perhaps unlike in math class, the y-axis is the vertical axis.
-        self.position = (0, 0, 0)
+        # right, and 0 otherwise. Third element is 1 when flying up -1 when 
+        # flying down and 0 otherwise
+        self.strafe = [0, 0, 0]
 
         # First element is rotation of the player in the x-z plane (ground
         # plane) measured from the z-axis down. The second is the rotation
@@ -460,6 +457,10 @@ class Core(pyglet.window.Window):
         
         # position of block in focus to print in lable
         self.focusedBlock = tuple()
+
+        # Current (x, y, z) position in the world, specified with floats. Note
+        # that, perhaps unlike in math class, the y-axis is the vertical axis.
+        self.model.world.position = (0, 0, 0)
 
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
@@ -502,7 +503,7 @@ class Core(pyglet.window.Window):
         """
         if any(self.strafe):
             x, y = self.rotation
-            strafe = math.degrees(math.atan2(*self.strafe))
+            strafe = math.degrees(math.atan2(self.strafe[0], self.strafe[1]))
             y_angle = math.radians(y)
             x_angle = math.radians(x + strafe)
             if self.flying:
@@ -540,7 +541,7 @@ class Core(pyglet.window.Window):
 
         """
         self.model.process_queue()
-        sector = Tools.sectorize(self.position, SECTOR_SIZE)
+        sector = Tools.sectorize(self.model.world.position, SECTOR_SIZE)
         if sector != self.sector:
             self.model.change_sectors(self.sector, sector)
             if self.sector is None:
@@ -576,14 +577,14 @@ class Core(pyglet.window.Window):
             self.dy = max(self.dy, -TERMINAL_VELOCITY)
             dy += self.dy * dt
         # collisions
-        x, y, z = self.position
+        x, y, z = self.model.world.position
         if self.isCrouch:
             x, y, z = self.collide((x + dx, y + dy, z + dz), 
                 self.conf.getConfValue('crouchHight'))
         else:
             x, y, z = self.collide((x + dx, y + dy, z + dz), 
                 self.conf.getConfValue('playerHight'))
-        self.position = (x, y, z)
+        self.model.world.position = (x, y, z)
 
     def collide(self, position, height):
         """ Checks to see if the player at the given `position` and `height`
@@ -650,7 +651,7 @@ class Core(pyglet.window.Window):
         """
         if self.exclusive:
             vector = self.get_sight_vector()
-            block, previous = self.model.hit_test(self.position, vector)
+            block, previous = self.model.hit_test(self.model.world.position, vector)
             if (button == mouse.RIGHT) or \
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
@@ -707,17 +708,21 @@ class Core(pyglet.window.Window):
         elif symbol == key.C:
             if modifiers == key.MOD_CTRL:
                 self.conf.saveConfig()
+            elif self.flying:
+                self.strafe[2] -= 1
             else:
                 self.isCrouch = True
-                pos = list(self.position)
+                pos = list(self.model.world.position)
                 pos[1] -= self.conf.getConfValue('playerHight') - self.conf.getConfValue('crouchHight')
-                self.position = tuple(pos)
+                self.model.world.position = tuple(pos)
         elif symbol == key.Q:
             self.conf.saveConfig()
                 #pyglet.app.exit()
         elif symbol == key.SPACE:
-            if self.dy == 0:
+            if self.dy == 0 and not self.flying:
                 self.dy = self.conf.getConfValue('jumpSpeed')
+            elif self.flying:
+                self.strafe[2] += 1
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
         elif symbol == key.TAB:
@@ -750,9 +755,14 @@ class Core(pyglet.window.Window):
         elif symbol == key.C:
             if not modifiers == key.MOD_CTRL:
                 self.isCrouch = False
-                pos = list(self.position)
+                pos = list(self.model.world.position)
                 pos[1] += self.conf.getConfValue('playerHight') - self.conf.getConfValue('crouchHight')
-                self.position = tuple(pos)
+                self.model.world.position = tuple(pos)
+            elif self.flying:
+                self.strafe[2] += 1
+        elif symbol == key.SPACE:
+            if self.flying:
+                self.strafe[2] -= 1
                 
 
     def on_resize(self, width, height):
@@ -798,7 +808,7 @@ class Core(pyglet.window.Window):
         x, y = self.rotation
         glRotatef(x, 0, 1, 0)
         glRotatef(-y, math.cos(math.radians(x)), 0, math.sin(math.radians(x)))
-        x, y, z = self.position
+        x, y, z = self.model.world.position
         glTranslatef(-x, -y, -z)
 
     def on_draw(self):
@@ -820,7 +830,7 @@ class Core(pyglet.window.Window):
 
         """
         vector = self.get_sight_vector()
-        block = self.model.hit_test(self.position, vector)[0]
+        block = self.model.hit_test(self.model.world.position, vector)[0]
         if block:
             x, y, z = block
             self.focusedBlock = block
@@ -834,7 +844,7 @@ class Core(pyglet.window.Window):
         """ Draw the label in the top left of the screen.
 
         """
-        x, y, z = self.position
+        x, y, z = self.model.world.position
         if self.model.world.getBlock(self.focusedBlock) is not None:
             self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d -- focus: %s - %s - %i' % (
                 pyglet.clock.get_fps(), x, y, z,

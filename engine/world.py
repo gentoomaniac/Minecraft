@@ -6,6 +6,8 @@ class World(object):
     
     def __init__(self):
         self._blocks = {}
+        # PLAYER position
+        self.position = (0, 0, 0)
         
     def addBlock(self, position, material):
         if position not in self._blocks:
@@ -42,3 +44,13 @@ class World(object):
     
     def getBlockPositions(self):
         return self._blocks.keys()
+    
+    def toJson(self):
+        data = {
+            'position': list(self.position)
+            }
+        return json.dumps(data)
+    
+    def fromJson(self, data):
+        obj = json.loads(data)
+        self.position = tuple(obj['position'])
