@@ -391,6 +391,7 @@ class Core(pyglet.window.Window):
     """
 
     def __init__(self, *args, **kwargs):
+        self.log = logging.getLogger(__name__)
         # get config object
         self.conf = EngineConfig()
         
@@ -457,10 +458,6 @@ class Core(pyglet.window.Window):
         
         # position of block in focus to print in lable
         self.focusedBlock = tuple()
-
-        # Current (x, y, z) position in the world, specified with floats. Note
-        # that, perhaps unlike in math class, the y-axis is the vertical axis.
-        self.model.world.position = (0, 0, 0)
 
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
@@ -697,7 +694,7 @@ class Core(pyglet.window.Window):
         if symbol == key.W:
             self.strafe[0] -= 1
         elif symbol == key.S:
-            if modifiers == key.MOD_CTRL:
+            if modifiers & key.MOD_CTRL:
                 Savegame.save(self.model.world)
             else:
                 self.strafe[0] += 1
@@ -706,7 +703,7 @@ class Core(pyglet.window.Window):
         elif symbol == key.D:
             self.strafe[1] += 1
         elif symbol == key.C:
-            if modifiers == key.MOD_CTRL:
+            if modifiers & key.MOD_CTRL:
                 self.conf.saveConfig()
             elif self.flying:
                 self.strafe[2] -= 1
@@ -746,14 +743,14 @@ class Core(pyglet.window.Window):
         if symbol == key.W:
             self.strafe[0] += 1
         elif symbol == key.S:
-            if not modifiers == key.MOD_CTRL:
+            if not modifiers & key.MOD_CTRL:
                 self.strafe[0] -= 1
         elif symbol == key.A:
             self.strafe[1] += 1
         elif symbol == key.D:
             self.strafe[1] -= 1
         elif symbol == key.C:
-            if not modifiers == key.MOD_CTRL:
+            if not modifiers & key.MOD_CTRL:
                 self.isCrouch = False
                 pos = list(self.model.world.position)
                 pos[1] += self.conf.getConfValue('playerHight') - self.conf.getConfValue('crouchHight')

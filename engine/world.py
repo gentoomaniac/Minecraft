@@ -6,7 +6,9 @@ class World(object):
     
     def __init__(self):
         self._blocks = {}
-        # PLAYER position
+
+        # Current (x, y, z) position in the world, specified with floats. Note
+        # that, perhaps unlike in math class, the y-axis is the vertical axis.
         self.position = (0, 0, 0)
         
     def addBlock(self, position, material):
