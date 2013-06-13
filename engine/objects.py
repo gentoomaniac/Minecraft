@@ -74,4 +74,4 @@ class Block(object):
         self._position = tuple(obj['position'])
         self._material = materials[obj['material']]
         self._life = obj['life']
-        self._isVisible = obj['visible']
+        self._isVisible = True #obj['visible']

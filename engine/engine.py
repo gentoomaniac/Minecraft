@@ -34,7 +34,7 @@ FACES = [
 TICKS_PER_SEC = 60
 
 # Size of sectors used to ease block loading.
-SECTOR_SIZE = 32
+SECTOR_SIZE = 8
 
 TERMINAL_VELOCITY = 50
 
@@ -267,13 +267,12 @@ class Model(object):
             texture_data = list(self.world.getBlock(position).getTexture())
             # create vertex list
             # FIXME Maybe `add_indexed()` should be used instead
-            self.visibleWorld[position] = True
             self.world.getBlock(position).setVisible(True)
             self.world.getBlock(position).setVertex(self.batch.add(24, GL_QUADS, self.group,
                 ('v3f/static', vertex_data),
                 ('t2f/static', texture_data)))
         except:
-            self.log.error("No block at %s" % (position,))
+            self.log.error("No block to show at %s" % (position,))
 
 
     def hide_block(self, position, immediate=True):
@@ -300,10 +299,11 @@ class Model(object):
 
         """
         try:
-            self.visibleWorld.pop(position)
-            self.world.getBlock(position).setVisible(False)
-        except Exception, e:
-            self.log.error("No block at %s" % (position,))
+            block = self.world.getBlock(position)
+            block.setVisible(false)
+            del block.vertex
+        except:
+            self.log.error("No block to hide at %s" % (position,))
 
     def show_sector(self, sector):
         """ Ensure all blocks in the given sector that should be shown are

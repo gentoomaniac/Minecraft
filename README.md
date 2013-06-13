@@ -2,29 +2,11 @@
 
 Simple Minecraft-inspired demo written in Python and Pyglet.
 
-http://www.youtube.com/watch?v=kC3lwK631X8
 
 ## Goals and Vision
 
-I would like to see this project turn into an educational tool. Kids love Minecraft and Python is a great first language.
-This is a good opportunity to get children excited about programming.
-
-The code should become well commented and more easily configurable. It should be easy to make some simple changes
-and see the results quickly.
-
-I think it would be great to turn the project into more of a library / API... a Python package that you import and then
-use / configure to setup a world and run it. Something along these lines...
-
-    import mc
-    
-    world = mc.World(...)
-    world.set_block(x, y, z, mc.DIRT)
-    mc.run(world)
-
-The API could contain functionality for the following:
-
-- Easily configurable parameters like gravity, jump velocity, walking speed, etc.
-- Hooks for terrain generation.
+This is a fork of a project from fogleman.
+It is purely educational for learning Python.
 
 ## How to Run
 
@@ -67,20 +49,25 @@ See the [wiki](https://github.com/fogleman/Minecraft/wiki) for this project to i
 
 ### Moving
 
-- W: forward
-- S: back
-- A: strafe left
-- D: strafe right
-- Mouse: look around
-- Space: jump
-- Tab: toggle flying mode
+- W:        forward
+- S:        back
+- A:        strafe left
+- D:        strafe right
+- Mouse:    look around
+- Space:    jump
+- C:        crouch
+- Tab:      toggle flying mode
+- ctrl + c: save config
+- ctrl + s: save game
+
 
 ### Building
 
 - Selecting type of block to create:
-    - 1: brick
-    - 2: grass
-    - 3: sand
+    - 1: stone (5 life)
+    - 2: sand (0 life)
+    - 3: grass (1 life)
+    - 4: brick
 - Mouse left-click: remove block
 - Mouse right-click: create block
 
