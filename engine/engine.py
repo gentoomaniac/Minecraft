@@ -17,6 +17,7 @@ from logger import *
 from world import *
 from materials import *
 from core import *
+from player import *
 
 TEXTURE_PATH = 'texture.png'
 
@@ -69,7 +70,7 @@ class Model(object):
         self.visibleWorld = {}
         
         # This defines all the blocks that are currently in the world.
-        self.world = Savegame.load()
+        (self.world, self.player) = Savegame.load()
         if self.world is None:
             self.log.debug("Couldn't load a savegame. Creating new world ...")
             self.world = World()
@@ -400,15 +401,8 @@ class Core(pyglet.window.Window):
                caption="%s v%s" % (self.conf.APP_NAME, self.conf.APP_VERSION),
                resizable=self.conf.getConfValue('resizeable'))
 
-        
-        # is player crouched or normal standing?
-        self.isCrouch = False
-
         # Whether or not the window exclusively captures the mouse.
         self.exclusive = False
-
-        # When flying gravity has no effect and speed is increased.
-        self.flying = False
 
         # Strafing is moving lateral to the direction you are facing,
         # e.g. moving to the left or right while continuing to face forward.
@@ -419,14 +413,6 @@ class Core(pyglet.window.Window):
         # flying down and 0 otherwise
         self.strafe = [0, 0, 0]
 
-        # First element is rotation of the player in the x-z plane (ground
-        # plane) measured from the z-axis down. The second is the rotation
-        # angle from the ground plane up. Rotation is in degrees.
-        #
-        # The vertical plane rotation ranges from -90 (looking straight down) to
-        # 90 (looking straight up). The horizontal rotation range is unbounded.
-        self.rotation = (0, 0)
-
         # Which sector the player is currently in.
         self.sector = None
 
@@ -436,12 +422,6 @@ class Core(pyglet.window.Window):
         # Velocity in the y (upward) direction.
         self.dy = 0
 
-        # A list of blocks the player can place. Hit num keys to cycle.
-        self.inventory = materials.keys()
-
-        # The current block the user can place. Hit num keys to cycle.
-        self.block = materials[self.inventory[0]]
-
         # Convenience list of num keys.
         self.num_keys = [
             key._1, key._2, key._3, key._4, key._5,
@@ -450,6 +430,18 @@ class Core(pyglet.window.Window):
         # Instance of the model that handles the world.
         self.model = Model()
 
+        # create the player
+        if self.model.player is not None:
+            self._player = self.model.player
+        else:
+            self._player = Player()
+
+        # A list of blocks the player can place. Hit num keys to cycle.
+        self._player.inventory = materials.keys()
+        
+        # The current block the user can place. Hit num keys to cycle.
+        self.block = materials[self._player.inventory[0]]
+                
         # The label that is displayed in the top left of the canvas.
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18,
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top',
@@ -476,7 +468,7 @@ class Core(pyglet.window.Window):
         the player is looking.
 
         """
-        x, y = self.rotation
+        x, y = self._player.rotation
         # y ranges from -90 to 90, or -pi/2 to pi/2, so m ranges from 0 to 1 and
         # is 1 when looking ahead parallel to the ground and 0 when looking
         # straight up or down.
@@ -499,11 +491,11 @@ class Core(pyglet.window.Window):
 
         """
         if any(self.strafe):
-            x, y = self.rotation
+            x, y = self._player.rotation
             strafe = math.degrees(math.atan2(self.strafe[0], self.strafe[1]))
             y_angle = math.radians(y)
             x_angle = math.radians(x + strafe)
-            if self.flying:
+            if self._player.flying:
                 m = math.cos(y_angle)
                 dy = math.sin(y_angle)
                 if self.strafe[1]:
@@ -538,7 +530,7 @@ class Core(pyglet.window.Window):
 
         """
         self.model.process_queue()
-        sector = Tools.sectorize(self.model.world.position, SECTOR_SIZE)
+        sector = Tools.sectorize(self._player.position, SECTOR_SIZE)
         if sector != self.sector:
             self.model.change_sectors(self.sector, sector)
             if self.sector is None:
@@ -560,13 +552,13 @@ class Core(pyglet.window.Window):
 
         """
         # walking
-        speed = self.conf.getConfValue('flyingSpeed') if self.flying else self.conf.getConfValue('walkingSpeed')
+        speed = self.conf.getConfValue('flyingSpeed') if self._player.flying else self.conf.getConfValue('walkingSpeed')
         d = dt * speed # distance covered this tick.
         dx, dy, dz = self.get_motion_vector()
         # New position in space, before accounting for gravity.
         dx, dy, dz = dx * d, dy * d, dz * d
         # gravity
-        if not self.flying:
+        if not self._player.flying:
             # Update your vertical speed: if you are falling, speed up until you
             # hit terminal velocity; if you are jumping, slow down until you
             # start falling.
@@ -574,14 +566,14 @@ class Core(pyglet.window.Window):
             self.dy = max(self.dy, -TERMINAL_VELOCITY)
             dy += self.dy * dt
         # collisions
-        x, y, z = self.model.world.position
-        if self.isCrouch:
+        x, y, z = self._player.position
+        if self._player.isCrouch:
             x, y, z = self.collide((x + dx, y + dy, z + dz), 
                 self.conf.getConfValue('crouchHight'))
         else:
             x, y, z = self.collide((x + dx, y + dy, z + dz), 
                 self.conf.getConfValue('playerHight'))
-        self.model.world.position = (x, y, z)
+        self._player.position = (x, y, z)
 
     def collide(self, position, height):
         """ Checks to see if the player at the given `position` and `height`
@@ -648,7 +640,7 @@ class Core(pyglet.window.Window):
         """
         if self.exclusive:
             vector = self.get_sight_vector()
-            block, previous = self.model.hit_test(self.model.world.position, vector)
+            block, previous = self.model.hit_test(self._player.position, vector)
             if (button == mouse.RIGHT) or \
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
@@ -673,10 +665,10 @@ class Core(pyglet.window.Window):
         """
         if self.exclusive:
             m = 0.15
-            x, y = self.rotation
+            x, y = self._player.rotation
             x, y = x + dx * m, y + dy * m
             y = max(-90, min(90, y))
-            self.rotation = (x, y)
+            self._player.rotation = (x, y)
 
     def on_key_press(self, symbol, modifiers):
         """ Called when the player presses a key. See pyglet docs for key
@@ -695,7 +687,7 @@ class Core(pyglet.window.Window):
             self.strafe[0] -= 1
         elif symbol == key.S:
             if modifiers & key.MOD_CTRL:
-                Savegame.save(self.model.world)
+                Savegame.save(self.model.world, self._player)
             else:
                 self.strafe[0] += 1
         elif symbol == key.A:
@@ -705,28 +697,28 @@ class Core(pyglet.window.Window):
         elif symbol == key.C:
             if modifiers & key.MOD_CTRL:
                 self.conf.saveConfig()
-            elif self.flying:
+            elif self._player.flying:
                 self.strafe[2] -= 1
             else:
-                self.isCrouch = True
-                pos = list(self.model.world.position)
+                self._player.isCrouch = True
+                pos = list(self._player.position)
                 pos[1] -= self.conf.getConfValue('playerHight') - self.conf.getConfValue('crouchHight')
-                self.model.world.position = tuple(pos)
+                self._player.position = tuple(pos)
         elif symbol == key.Q:
             self.conf.saveConfig()
                 #pyglet.app.exit()
         elif symbol == key.SPACE:
-            if self.dy == 0 and not self.flying:
+            if self.dy == 0 and not self._player.flying:
                 self.dy = self.conf.getConfValue('jumpSpeed')
-            elif self.flying:
+            elif self._player.flying:
                 self.strafe[2] += 1
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
         elif symbol == key.TAB:
-            self.flying = not self.flying
+            self._player.flying = not self._player.flying
         elif symbol in self.num_keys:
-            index = (symbol - self.num_keys[0]) % len(self.inventory)
-            self.block = materials[self.inventory[index]]
+            index = (symbol - self.num_keys[0]) % len(self._player.inventory)
+            self.block = materials[self._player.inventory[index]]
 
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
@@ -751,14 +743,14 @@ class Core(pyglet.window.Window):
             self.strafe[1] -= 1
         elif symbol == key.C:
             if not modifiers & key.MOD_CTRL:
-                self.isCrouch = False
-                pos = list(self.model.world.position)
+                self._player.isCrouch = False
+                pos = list(self._player.position)
                 pos[1] += self.conf.getConfValue('playerHight') - self.conf.getConfValue('crouchHight')
-                self.model.world.position = tuple(pos)
-            elif self.flying:
+                self._player.position = tuple(pos)
+            elif self._player.flying:
                 self.strafe[2] += 1
         elif symbol == key.SPACE:
-            if self.flying:
+            if self._player.flying:
                 self.strafe[2] -= 1
                 
 
@@ -802,10 +794,10 @@ class Core(pyglet.window.Window):
         gluPerspective(65.0, width / float(height), 0.1, 60.0)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        x, y = self.rotation
+        x, y = self._player.rotation
         glRotatef(x, 0, 1, 0)
         glRotatef(-y, math.cos(math.radians(x)), 0, math.sin(math.radians(x)))
-        x, y, z = self.model.world.position
+        x, y, z = self._player.position
         glTranslatef(-x, -y, -z)
 
     def on_draw(self):
@@ -827,7 +819,7 @@ class Core(pyglet.window.Window):
 
         """
         vector = self.get_sight_vector()
-        block = self.model.hit_test(self.model.world.position, vector)[0]
+        block = self.model.hit_test(self._player.position, vector)[0]
         if block:
             x, y, z = block
             self.focusedBlock = block
@@ -841,7 +833,7 @@ class Core(pyglet.window.Window):
         """ Draw the label in the top left of the screen.
 
         """
-        x, y, z = self.model.world.position
+        x, y, z = self._player.position
         if self.model.world.getBlock(self.focusedBlock) is not None:
             self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d -- focus: %s - %s - %i' % (
                 pyglet.clock.get_fps(), x, y, z,

@@ -6,10 +6,6 @@ class World(object):
     
     def __init__(self):
         self._blocks = {}
-
-        # Current (x, y, z) position in the world, specified with floats. Note
-        # that, perhaps unlike in math class, the y-axis is the vertical axis.
-        self.position = (0, 0, 0)
         
     def addBlock(self, position, material):
         if position not in self._blocks:
@@ -49,10 +45,8 @@ class World(object):
     
     def toJson(self):
         data = {
-            'position': list(self.position)
             }
         return json.dumps(data)
     
     def fromJson(self, data):
         obj = json.loads(data)
-        self.position = tuple(obj['position'])

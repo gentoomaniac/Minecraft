@@ -6,6 +6,7 @@ from logger import *
 
 
 from world import *
+from player import *
 from objects import *
 from materials import *
 
@@ -105,13 +106,13 @@ class Savegame(object):
     NAME = "save.gz"
    
     @staticmethod
-    def save(world):
+    def save(world, player):
         log = logging.getLogger('save game')
         log.debug('saving game ...')
         try:
             saveFile = gzip.open("%s/%s" % (EngineConfig().getPath(),Savegame.NAME), 'w')
             log.debug('writing data')
-            saveFile.write("%s\n" % (world.toJson(),))
+            saveFile.write("%s\n" % (player.toJson(),))
             for coord in world.getBlockPositions():
                 saveFile.write("%s\n" % (world.getBlock(coord).toJson(),))
             saveFile.close()
@@ -123,9 +124,10 @@ class Savegame(object):
         log = logging.getLogger('load game')
         log.debug('loading game ...')
         world = World()
+        player = Player()
         try:
             saveFile = gzip.open("%s/%s" % (EngineConfig().getPath(),Savegame.NAME), 'r')
-            world.fromJson(saveFile.readline())
+            player.fromJson(saveFile.readline())
             for line in saveFile.readlines():
                 tmp = Block()
                 tmp.fromJson(line)
@@ -134,4 +136,4 @@ class Savegame(object):
             log.error('loading failed: %s' % (e,))
             return None
             
-        return world
+        return (world, player)
