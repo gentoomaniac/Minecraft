@@ -45,6 +45,10 @@ class EngineConfig(object):
         self.configSettings['playerHight'] = 2
         self.configSettings['crouchHight'] = 1
         self.configSettings['maxJumHight'] = 1.0
+        self.configSettings['velocity'] = 50
+        self.configSettings['ticksPerSecond'] = 60
+        self.configSettings['sectorSize'] = 16
+        self.configSettings['texturePath'] = 'ressources/texture.png'
                 
         # To derive the formula for calculating jump speed, first solve
         #    v_t = v_0 + a * t

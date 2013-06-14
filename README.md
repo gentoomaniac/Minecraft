@@ -11,9 +11,9 @@ It is purely educational for learning Python.
 ## How to Run
 
     pip install pyglet
-    git clone https://github.com/fogleman/Minecraft.git
+    git clone https://github.com/gentoomaniac/Minecraft.git
     cd Minecraft
-    python main.py
+    ./main.py
 
 ### Mac
 
