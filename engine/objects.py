@@ -1,4 +1,5 @@
 import json
+import logging
 from materials import *
 
 class Block(object):
@@ -7,6 +8,8 @@ class Block(object):
     """
 
     def __init__(self, position=None, material=None):
+        self.log = logging.getLogger(__name__)
+    
         self._isVisible = False
         # pyglet `VertextList` for shown blocks
         self._vertex = None
@@ -56,6 +59,8 @@ class Block(object):
     
     def setVisible(self, visible):
         self._isVisible = visible
+
+            
         
     def getMaterial(self):
         return self._material.name

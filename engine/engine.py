@@ -271,8 +271,8 @@ class Model(object):
             self.world.getBlock(position).setVertex(self.batch.add(24, GL_QUADS, self.group,
                 ('v3f/static', vertex_data),
                 ('t2f/static', texture_data)))
-        except:
-            self.log.error("No block to show at %s" % (position,))
+        except Exception, e:
+            self.log.error("Showing block at %s failed: %s" % (position, e))
 
 
     def hide_block(self, position, immediate=True):
@@ -300,10 +300,11 @@ class Model(object):
         """
         try:
             block = self.world.getBlock(position)
-            block.setVisible(false)
-            del block.vertex
-        except:
-            self.log.error("No block to hide at %s" % (position,))
+            block.setVisible(False)
+            vertex = block.getVertex()
+            del vertex
+        except Exception, e:
+            self.log.error("Hiding block at %s failed: %s" % (position,e))
 
     def show_sector(self, sector):
         """ Ensure all blocks in the given sector that should be shown are
@@ -330,6 +331,7 @@ class Model(object):
         world rendering.
 
         """
+        self.log.debug("Sector switch from %s to %s" % (before, after))
         before_set = set()
         after_set = set()
         # probaby # of sectors to show
