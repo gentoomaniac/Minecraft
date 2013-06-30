@@ -1,4 +1,5 @@
 from objects import *
+
 class World(object):
     """ Representation of the World
     

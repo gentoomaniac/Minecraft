@@ -1,14 +1,6 @@
-    
+import logging
 import json
-import gzip
 import math
-from logger import *
-
-
-from world import *
-from player import *
-from objects import *
-from materials import *
 
 class EngineConfig(object):
     """ This class handles the configuration of the game
@@ -48,6 +40,7 @@ class EngineConfig(object):
         self.configSettings['velocity'] = 50
         self.configSettings['ticksPerSecond'] = 60
         self.configSettings['sectorSize'] = 16
+        self.configSettings['baseDir'] = '/home/freak/git/Minecraft'
         self.configSettings['texturePath'] = 'ressources/texture.png'
                 
         # To derive the formula for calculating jump speed, first solve
@@ -64,9 +57,9 @@ class EngineConfig(object):
 
     def getConfValue(self, key):
         if key in self.configSettings.keys():
-             return self.configSettings[key]
+            return self.configSettings[key]
         else:
-             raise Exception("Setting not found!")
+            raise Exception("Setting not found!")
          
     def setConfValue(self, key, val):
         self.configSettings[key] = val
@@ -101,43 +94,3 @@ class EngineConfig(object):
             self.log.debug('config written in %s' % (EngineConfig.CONFIG_PATH,))
         except Exception, e:
             self.log.error('Error saving config: %s' % (str(e),))
-
-
-class Savegame(object):
-    """ This class handles a savgame
-    
-    """
-    NAME = "save.gz"
-   
-    @staticmethod
-    def save(world, player):
-        log = logging.getLogger('save game')
-        log.debug('saving game ...')
-        try:
-            saveFile = gzip.open("%s/%s" % (EngineConfig().getPath(),Savegame.NAME), 'w')
-            log.debug('writing data')
-            saveFile.write("%s\n" % (player.toJson(),))
-            for coord in world.getBlockPositions():
-                saveFile.write("%s\n" % (world.getBlock(coord).toJson(),))
-            saveFile.close()
-        except Exception, e:
-            log.error('saving failed: %s' % (str(e),))
-    
-    @staticmethod
-    def load(name="save.gz"):
-        log = logging.getLogger('load game')
-        log.debug('loading game ...')
-        world = World()
-        player = Player()
-        try:
-            saveFile = gzip.open("%s/%s" % (EngineConfig().getPath(),Savegame.NAME), 'r')
-            player.fromJson(saveFile.readline())
-            for line in saveFile.readlines():
-                tmp = Block()
-                tmp.fromJson(line)
-                world.setBlock(tmp)
-        except Exception, e:
-            log.error('loading failed: %s' % (e,))
-            return None
-            
-        return (world, player)

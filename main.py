@@ -7,7 +7,8 @@ import os
 import syslog
 from optparse import OptionParser
 
-from engine import *
+import engine.EngineConfig as EC
+import engine.engine as Engine
 
 def main():
     """ prepare logging object
@@ -18,11 +19,13 @@ def main():
                     filename='debug.log')
     log = logging.getLogger(__name__)
     
+    log.debug(' #################### Starting ####################')
     
     # get config object
-    conf = core.EngineConfig()
+    conf = EC.EngineConfig()
     conf.setPath(os.path.abspath(os.path.join(os.path.dirname(__file__))))
     conf.loadConfig()
+    conf.setConfValue('baseDir', os.path.dirname(__file__))
     
     """ Create config object and parse command line options
     """
@@ -31,7 +34,7 @@ def main():
                     help="load level", metavar="FILE")
     
     log.debug('Creating core object')
-    gfx = engine.Core()
+    gfx = Engine.Core()
     # Hide the mouse cursor and prevent the mouse from leaving the window.
     log.debug('Setting up core object')
     gfx.set_exclusive_mouse(True)

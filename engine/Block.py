@@ -1,5 +1,6 @@
 import json
 import logging
+
 from materials import *
 
 class Block(object):
@@ -80,3 +81,13 @@ class Block(object):
         self._material = materials[obj['material']]
         self._life = obj['life']
         self._isVisible = True #obj['visible']
+
+
+FACES = [
+    ( 0, 1, 0),
+    ( 0,-1, 0),
+    (-1, 0, 0),
+    ( 1, 0, 0),
+    ( 0, 0, 1),
+    ( 0, 0,-1),
+]
