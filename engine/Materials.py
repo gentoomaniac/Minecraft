@@ -2,29 +2,28 @@ import logging
 import json
 import os
 
+from pyglet.graphics import TextureGroup
+from pyglet import image
+
 import Transform
 import EngineConfig as EC
+from Singleton import *
 
 class Material(object):
     """ Contains matirial information
     
     """
     
-    def __init__(self, name, texture, sustain=0):
-        self.name = name
-        self.texture = texture
-        self.sustain = sustain
+    def __init__(self):
+        self.name = ''
+        self.texture = None
+        self.sustain = 0
+        self.textureGroup = None
+        self.clipping = True
 
+
+@Singleton
 class MaterialFactory(object):
-
-    def __new__(type, *args):
-        log = logging.getLogger('MaterialFactory')
-        # Singelton Part: if there is no instance create one and save it to _the_instance.
-        # If already existing, just return a reference to the instance.
-        if not '_the_instance' in type.__dict__:
-            type._the_instance = object.__new__(type)
-        log.debug("MaterialFactory object: %s" % (type._the_instance,))
-        return type._the_instance
 
     def __init__(self):
         self.log = logging.getLogger('MaterialFactory')
@@ -33,27 +32,50 @@ class MaterialFactory(object):
         self._materialPath = os.path.join(conf.getConfValue('baseDir'),'ressources/materials/')
         self._materials = {}
         self.loadMaterials()
+        
+    def getMaterial(self, name):
+        self.log.debug(self._materials[name])
+        return self._materials[name]
+    
+    def keys(self):
+        return self._materials.keys()
 
     def loadMaterials(self):
+        """ This method crawles the ressources for diffrent materials
+            and loads them for future use
+        """
         self.log.debug('loading materials from %s' % (self._materialPath, ))
         for file in os.listdir(self._materialPath):
             absPath = os.path.join(self._materialPath, file)
+            
+            """ if found new material, load metadata and textures """
             if os.path.isdir(absPath):
+                self.log.debug('material found: %s' % (file, ))
+                
+                # load json material definition
                 try:
                     defFile = open(os.path.join(absPath, "material.json"), 'r')
                     definition = "".join(defFile.readlines())
                     jsonObj = json.loads(definition)
-                    self._materials[jsonObj['name']] = jsonObj
                 except Exception, e:
-                    self.log.error(str(e))
+                    self.log.error("Error loading material metadata: %s" % (str(e), ))
                     
-                self._materials[file] = 'file'
-                self.log.debug('material found: %s' % (file, ))
-
-
-materials = {
-    'Grass': Material("Grass", Transform.Tools.tex_coords((1, 0), (0, 1), (0, 0)), 1), 
-    'Sand': Material("Sand", Transform.Tools.tex_coords((1, 1), (1, 1), (1, 1)), 0),
-    'Brick': Material("Brick", Transform.Tools.tex_coords((2, 0), (2, 0), (2, 0)), 2),
-    'Stone': Material("Stone",Transform.Tools.tex_coords((2, 1), (2, 1), (2, 1)), 4)
-}
+                # create new Material object
+                self._materials[jsonObj['name']] = Material()
+                    
+                # load texture
+                try:
+                    self._materials[jsonObj['name']].name = jsonObj['name']
+                    self._materials[jsonObj['name']].sustain = jsonObj['sustain']
+                    self._materials[jsonObj['name']].clipping = jsonObj['clipping']
+                    self._materials[jsonObj['name']].texture = Transform.Tools.tex_coords(
+                        tuple(jsonObj['texture']['mapping']['top']),
+                        tuple(jsonObj['texture']['mapping']['bottom']),
+                        tuple(jsonObj['texture']['mapping']['sides']))
+                    # A TextureGroup manages an OpenGL texture.
+                    self._materials[jsonObj['name']].textureGroup = TextureGroup(
+                        image.load(os.path.join(absPath,jsonObj['texture']['ressource'])).get_texture())
+                    
+                except Exception, e:
+                    self.log.error("Error loading material textures: %s" % (str(e), ))
+                    self.log.error(e)

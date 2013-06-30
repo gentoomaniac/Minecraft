@@ -12,6 +12,7 @@ import Transform
 import Block
 import World
 import EngineConfig as EC
+import Materials
 
 TEXTURE_PATH = 'ressources/texture.png'
 
@@ -26,11 +27,6 @@ class Model(object):
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
 
-        # A TextureGroup manages an OpenGL texture.
-        self.group = TextureGroup(image.load(TEXTURE_PATH).get_texture())
-
-        
-
         # Mapping from sector to a list of positions inside that sector.
         self.sectors = {}
 
@@ -38,6 +34,7 @@ class Model(object):
         # _show_block() and _hide_block() calls
         self.queue = deque()
 
+        self._materialFactory = Materials.MaterialFactory.Instance()
         
         # all shown blocks.
         self.visibleWorld = {}
@@ -236,12 +233,14 @@ class Model(object):
         """
         x, y, z = position
         try:
+            block = self.world.getBlock(position)
             vertex_data = Transform.Tools.cube_vertices(x, y, z, 0.5)
-            texture_data = list(self.world.getBlock(position).getTexture())
+            texture_data = list(block.getTexture())
+            self.log.debug(block.getMaterial())
             # create vertex list
             # FIXME Maybe `add_indexed()` should be used instead
-            self.world.getBlock(position).setVisible(True)
-            self.world.getBlock(position).setVertex(self.batch.add(24, GL_QUADS, self.group,
+            block.setVisible(True)
+            block.setVertex(self.batch.add(24, GL_QUADS, self._materialFactory.getMaterial(block.getMaterial()).textureGroup,
                 ('v3f/static', vertex_data),
                 ('t2f/static', texture_data)))
         except Exception, e:

@@ -1,7 +1,7 @@
 import json
 import logging
 
-from materials import *
+import Materials
 
 class Block(object):
     """ will hold a block object
@@ -9,7 +9,7 @@ class Block(object):
     """
 
     def __init__(self, position=None, material=None):
-        self.log = logging.getLogger(__name__)
+        self.log = logging.getLogger("Block")
     
         self._isVisible = False
         # pyglet `VertextList` for shown blocks
@@ -51,7 +51,10 @@ class Block(object):
         
     def deleteVertex(self):
         del self._vertex
-        
+    
+    def getMaterial(self):
+        return self._material
+    
     def getPosition(self):
         return self._position
     
@@ -76,9 +79,10 @@ class Block(object):
         return json.dumps(out)
     
     def fromJson(self, data):
+        materialFactory = Materials.MaterialFactory.Instance()
         obj = json.loads(data)
         self._position = tuple(obj['position'])
-        self._material = materials[obj['material']]
+        self._material = obj['material']
         self._life = obj['life']
         self._isVisible = True #obj['visible']
 

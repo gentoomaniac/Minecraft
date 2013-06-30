@@ -1,6 +1,6 @@
 {
-    "name": "Grass",
-    "sustain": "1",
+    "name": "Brick",
+    "sustain": "2",
     "texture": {
         "ressource": "./texture.png",
         "mapping": {

@@ -68,13 +68,13 @@ class Core(pyglet.window.Window):
         else:
             self._player = Player()
             
-        self._materialFactory = Materials.MaterialFactory()
+        self._materialFactory = Materials.MaterialFactory.Instance()
 
         # A list of blocks the player can place. Hit num keys to cycle.
-        self._player.inventory = Materials.materials.keys()
+        self._player.inventory = self._materialFactory.keys()
         
         # The current block the user can place. Hit num keys to cycle.
-        self.block = Materials.materials[self._player.inventory[0]]
+        self.block = self._materialFactory.getMaterial(self._player.inventory[0])
                 
         # The label that is displayed in the top left of the canvas.
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18,
