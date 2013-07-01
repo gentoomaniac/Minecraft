@@ -22,7 +22,7 @@ def main():
     log.debug(' #################### Starting ####################')
     
     # get config object
-    conf = EC.EngineConfig()
+    conf = EC.EngineConfig.Instance()
     conf.setPath(os.path.abspath(os.path.join(os.path.dirname(__file__))))
     conf.loadConfig()
     conf.setConfValue('baseDir', os.path.dirname(__file__))

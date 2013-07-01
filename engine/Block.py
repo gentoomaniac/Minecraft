@@ -29,7 +29,10 @@ class Block(object):
             self._vertex.delete()
         
     def decreaseLife(self, step=1):
-        self._life -= step
+        try:
+            self._life -= step
+        except TypeError, e:
+            self.log.debug("%s - type: %s" % (str(e), type(self._life)))
         
     def isAlive(self):
         if self._life > 0:
@@ -82,7 +85,7 @@ class Block(object):
         materialFactory = Materials.MaterialFactory.Instance()
         obj = json.loads(data)
         self._position = tuple(obj['position'])
-        self._material = obj['material']
+        self._material = materialFactory.getMaterial(obj['material'])
         self._life = obj['life']
         self._isVisible = True #obj['visible']
 

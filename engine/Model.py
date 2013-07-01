@@ -22,7 +22,7 @@ class Model(object):
         
         self.log = logging.getLogger("Model")
         
-        self.conf = EC.EngineConfig()
+        self.conf = EC.EngineConfig.Instance()
 
         # A Batch is a collection of vertex lists for batched rendering.
         self.batch = pyglet.graphics.Batch()
@@ -236,7 +236,6 @@ class Model(object):
             block = self.world.getBlock(position)
             vertex_data = Transform.Tools.cube_vertices(x, y, z, 0.5)
             texture_data = list(block.getTexture())
-            self.log.debug(block.getMaterial())
             # create vertex list
             # FIXME Maybe `add_indexed()` should be used instead
             block.setVisible(True)

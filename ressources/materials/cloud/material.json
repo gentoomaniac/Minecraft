@@ -2,7 +2,7 @@
     "name": "Cloud",
     "sustain": "0",
     "texture": {
-        "ressource": "./texture.png",
+        "ressource": "texture.png",
         "mapping": {
             "top": [0, 1],
             "bottom": [0, 0],

@@ -26,7 +26,7 @@ class Core(pyglet.window.Window):
     def __init__(self, *args, **kwargs):
         self.log = logging.getLogger("Core")
         # get config object
-        self.conf = EC.EngineConfig()
+        self.conf = EC.EngineConfig.Instance()
         
         super(Core, self).__init__(width=self.conf.getConfValue('screenWidth'),
                height=self.conf.getConfValue('screenHeight'),
@@ -74,7 +74,7 @@ class Core(pyglet.window.Window):
         self._player.inventory = self._materialFactory.keys()
         
         # The current block the user can place. Hit num keys to cycle.
-        self.block = self._materialFactory.getMaterial(self._player.inventory[0])
+        self._selectedBlock = self._materialFactory.getMaterial(self._player.inventory[0])
                 
         # The label that is displayed in the top left of the canvas.
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18,
@@ -247,6 +247,11 @@ class Core(pyglet.window.Window):
                     op[i] += face[i]
                     if not self.model.world.existsBlockAt(tuple(op)):
                         continue
+                    # check for non resiting block (no colision)
+                    if not self._materialFactory.getMaterial(
+                            self.model.world.getBlock(tuple(op)).getMaterial()).clipping:
+                        self.log.debug("schouldn't collide with %s" % tuple(op) )
+                        continue
                     p[i] -= (d - pad) * face[i]
                     if face == (0, -1, 0) or face == (0, 1, 0):
                         # You are colliding with the ground or ceiling, so stop
@@ -279,7 +284,7 @@ class Core(pyglet.window.Window):
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
                 if previous:
-                    self.model.add_block(previous, self.block)
+                    self.model.add_block(previous, self._selectedBlock)
             elif button == pyglet.window.mouse.LEFT and block:
                 self.model.remove_block(block)
         else:
@@ -352,7 +357,8 @@ class Core(pyglet.window.Window):
             self._player.flying = not self._player.flying
         elif symbol in self.num_keys:
             index = (symbol - self.num_keys[0]) % len(self._player.inventory)
-            self.block = materials[self._player.inventory[index]]
+            # TODO: move selected block to player object
+            self._selectedBlock = self._materialFactory.getMaterial(self._player.inventory[index])
 
     def on_key_release(self, symbol, modifiers):
         """ Called when the player releases a key. See pyglet docs for key
@@ -467,17 +473,20 @@ class Core(pyglet.window.Window):
         """ Draw the label in the top left of the screen.
 
         """
-        x, y, z = self._player.position
-        if self.model.world.getBlock(self.focusedBlock) is not None:
-            self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d -- focus: %s - %s - %i' % (
-                pyglet.clock.get_fps(), x, y, z,
-                len(self.model.visibleWorld), self.model.world.getBlockCount(),
-                self.focusedBlock, self.model.world.getBlock(self.focusedBlock).getMaterial(),
-                self.model.world.getBlock(self.focusedBlock).getLife())
-        else:
-            self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
-                pyglet.clock.get_fps(), x, y, z,
-                len(self.model.visibleWorld), self.model.world.getBlockCount())
+        try:
+            x, y, z = self._player.position
+            if self.model.world.getBlock(self.focusedBlock) is not None:
+                self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d -- focus: %s - %s - %i' % (
+                    pyglet.clock.get_fps(), x, y, z,
+                    len(self.model.visibleWorld), self.model.world.getBlockCount(),
+                    self.focusedBlock, self.model.world.getBlock(self.focusedBlock).getMaterial(),
+                    self.model.world.getBlock(self.focusedBlock).getLife())
+            else:
+                self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
+                    pyglet.clock.get_fps(), x, y, z,
+                    len(self.model.visibleWorld), self.model.world.getBlockCount())
+        except Exception, e:
+            self.label.text = str(e)
         self.label.draw()
 
     def draw_reticle(self):
@@ -515,12 +524,5 @@ class Core(pyglet.window.Window):
         # Enable culling (not rendering) of back-facing facets -- facets that aren't
         # visible to you.
         glEnable(GL_CULL_FACE)
-        # Set the texture minification/magnification function to GL_NEAREST (nearest
-        # in Manhattan distance) to the specified texture coordinates. GL_NEAREST
-        # "is generally faster than GL_LINEAR, but it can produce textured images
-        # with sharper edges because the transition between texture elements is not
-        # as smooth."
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         self.setup_fog()
         pyglet.app.run()

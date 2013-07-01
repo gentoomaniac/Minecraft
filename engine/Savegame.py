@@ -2,6 +2,7 @@ import json
 import gzip
 import math
 import logging
+import os
 
 import World
 import Player
@@ -20,7 +21,7 @@ class Savegame(object):
         log = logging.getLogger('save game')
         log.debug('saving game ...')
         try:
-            saveFile = gzip.open("%s/%s" % (EC.EngineConfig().getPath(), Savegame.NAME), 'w')
+            saveFile = gzip.open(os.path.join(EC.EngineConfig.Instnace().getPath(), Savegame.NAME), 'w')
             log.debug('writing data')
             saveFile.write("%s\n" % (player.toJson(),))
             for coord in world.getBlockPositions():
@@ -36,7 +37,7 @@ class Savegame(object):
         world = World.World()
         player = Player.Player()
         try:
-            saveFile = gzip.open("%s/%s" % (EC.EngineConfig().getPath(), Savegame.NAME), 'r')
+            saveFile = gzip.open(os.path.join(EC.EngineConfig.Instance().getPath(), Savegame.NAME), 'r')
             player.fromJson(saveFile.readline())
             for line in saveFile.readlines():
                 tmp = Block.Block()

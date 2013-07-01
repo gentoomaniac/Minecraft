@@ -2,6 +2,9 @@ import logging
 import json
 import math
 
+from Singleton import *
+
+@Singleton
 class EngineConfig(object):
     """ This class handles the configuration of the game
     
@@ -13,35 +16,25 @@ class EngineConfig(object):
     
     CONFIG_PATH = 'ressources/engine.conf'
     
-    def __new__(type, *args):
-        log = logging.getLogger('Config')
-        # Singelton Part: if there is now instance create one and save it to _the_instance.
-        # If already existing, just return a reference to the instance.
-        if not '_the_instance' in type.__dict__:
-            type._the_instance = object.__new__(type)
-        log.debug("Conf object: %s" % (type._the_instance,))
-        return type._the_instance
-    
     def __init__(self):
         
         self.log = logging.getLogger('Config')
         self._path = '.'
 
-        self.configSettings = {}
-        self.configSettings['screenHeight'] = 600
-        self.configSettings['screenWidth'] = 800
-        self.configSettings['resizeable'] = True
-        self.configSettings['walkingSpeed'] = 5
-        self.configSettings['flyingSpeed'] = 10
-        self.configSettings['gravity'] = 5
-        self.configSettings['playerHight'] = 2
-        self.configSettings['crouchHight'] = 1
-        self.configSettings['maxJumHight'] = 1.0
-        self.configSettings['velocity'] = 50
-        self.configSettings['ticksPerSecond'] = 60
-        self.configSettings['sectorSize'] = 16
-        self.configSettings['baseDir'] = '/home/freak/git/Minecraft'
-        self.configSettings['texturePath'] = 'ressources/texture.png'
+        self._configSettings = {}
+        self._configSettings['screenHeight'] = 600
+        self._configSettings['screenWidth'] = 800
+        self._configSettings['resizeable'] = True
+        self._configSettings['walkingSpeed'] = 5
+        self._configSettings['flyingSpeed'] = 10
+        self._configSettings['gravity'] = 5
+        self._configSettings['playerHight'] = 2
+        self._configSettings['crouchHight'] = 1
+        self._configSettings['maxJumHight'] = 1.0
+        self._configSettings['velocity'] = 50
+        self._configSettings['ticksPerSecond'] = 60
+        self._configSettings['sectorSize'] = 16
+        self._configSettings['baseDir'] = '~/Minecraft'
                 
         # To derive the formula for calculating jump speed, first solve
         #    v_t = v_0 + a * t
@@ -50,19 +43,19 @@ class EngineConfig(object):
         #    t = - v_0 / a
         # Use t and the desired MAX_JUMP_HEIGHT to solve for v_0 (jump speed) in
         #    s = s_0 + v_0 * t + (a * t^2) / 2
-        self.configSettings['jumpSpeed'] = math.sqrt(2 * self.configSettings['gravity'] * 
-                self.configSettings['maxJumHight'])
+        self._configSettings['jumpSpeed'] = math.sqrt(2 * self._configSettings['gravity'] * 
+                self._configSettings['maxJumHight'])
         
         
 
     def getConfValue(self, key):
-        if key in self.configSettings.keys():
-            return self.configSettings[key]
+        if key in self._configSettings.keys():
+            return self._configSettings[key]
         else:
             raise Exception("Setting not found!")
          
     def setConfValue(self, key, val):
-        self.configSettings[key] = val
+        self._configSettings[key] = val
          
     def setPath(self, path):
         self._path = path
@@ -76,9 +69,8 @@ class EngineConfig(object):
             content = open(EngineConfig.CONFIG_PATH, 'r').read()
             try:
                 self.log.debug('parsing config')
-                self.configSettings = {}
-                self.configSettings = json.loads(content)
-                self.log.debug(json.dumps(self.configSettings))
+                self._configSettings.update(json.loads(content))
+                self.log.debug(json.dumps(self._configSettings))
             except Exception, e:
                 self.log.error('Error parsing config: %s' % (str(e),))
         except Exception, e:
@@ -89,7 +81,7 @@ class EngineConfig(object):
     def saveConfig(self):
         try:
             conf = open(EngineConfig.CONFIG_PATH, 'w')
-            conf.write(json.dumps(self.configSettings))
+            conf.write(json.dumps(self._configSettings))
             conf.close()
             self.log.debug('config written in %s' % (EngineConfig.CONFIG_PATH,))
         except Exception, e:

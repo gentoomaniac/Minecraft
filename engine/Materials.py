@@ -2,11 +2,9 @@ import logging
 import json
 import os
 
-from pyglet.graphics import TextureGroup
-from pyglet import image
-
 import Transform
 import EngineConfig as EC
+import TextureFactory as TF
 from Singleton import *
 
 class Material(object):
@@ -28,13 +26,12 @@ class MaterialFactory(object):
     def __init__(self):
         self.log = logging.getLogger('MaterialFactory')
         # get config object
-        conf = EC.EngineConfig()
+        conf = EC.EngineConfig.Instance()
         self._materialPath = os.path.join(conf.getConfValue('baseDir'),'ressources/materials/')
         self._materials = {}
         self.loadMaterials()
         
     def getMaterial(self, name):
-        self.log.debug(self._materials[name])
         return self._materials[name]
     
     def keys(self):
@@ -45,6 +42,9 @@ class MaterialFactory(object):
             and loads them for future use
         """
         self.log.debug('loading materials from %s' % (self._materialPath, ))
+        
+        textureFactory = TF.TextureFactory.Instance()
+        
         for file in os.listdir(self._materialPath):
             absPath = os.path.join(self._materialPath, file)
             
@@ -73,9 +73,8 @@ class MaterialFactory(object):
                         tuple(jsonObj['texture']['mapping']['bottom']),
                         tuple(jsonObj['texture']['mapping']['sides']))
                     # A TextureGroup manages an OpenGL texture.
-                    self._materials[jsonObj['name']].textureGroup = TextureGroup(
-                        image.load(os.path.join(absPath,jsonObj['texture']['ressource'])).get_texture())
+                    self._materials[jsonObj['name']].textureGroup = textureFactory.loadTexture(
+                        os.path.join(absPath,jsonObj['texture']['ressource']))
                     
                 except Exception, e:
-                    self.log.error("Error loading material textures: %s" % (str(e), ))
-                    self.log.error(e)
+                    self.log.debug("Error loading material textures: %s" % (str(e), ))
