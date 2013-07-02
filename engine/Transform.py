@@ -16,9 +16,10 @@ class Tools:
         ]
 
     @staticmethod
-    def tex_coord(x, y, n=4):
+    def tex_coord(x, y, n=2):
         """ Return the bounding vertices of the texture square.
-
+            n will have an impact on texture loading.
+            n=2 splits a 128x128 texture into 4 squares
         """
         m = 1.0 / n
         dx = x * m
