@@ -250,8 +250,8 @@ class Core(pyglet.window.Window):
                     # check for non resiting block (no colision)
                     if not self._materialFactory.getMaterial(
                             self.model.world.getBlock(tuple(op)).getMaterial()).clipping:
-                        self.log.debug("schouldn't collide with %s" % tuple(op) )
                         continue
+                    
                     p[i] -= (d - pad) * face[i]
                     if face == (0, -1, 0) or face == (0, 1, 0):
                         # You are colliding with the ground or ceiling, so stop
@@ -521,8 +521,10 @@ class Core(pyglet.window.Window):
         """
         # Set the color of "clear", i.e. the sky, in rgba.
         glClearColor(0.5, 0.69, 1.0, 1)
+        ## We need to enable this again as we now have partly transparent blocks
         # Enable culling (not rendering) of back-facing facets -- facets that aren't
         # visible to you.
-        glEnable(GL_CULL_FACE)
+        #glEnable(GL_CULL_FACE)
+        
         self.setup_fog()
         pyglet.app.run()

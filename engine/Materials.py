@@ -58,7 +58,7 @@ class MaterialFactory(object):
                     definition = "".join(defFile.readlines())
                     jsonObj = json.loads(definition)
                 except Exception, e:
-                    self.log.error("Error loading material metadata: %s" % (str(e), ))
+                    self.log.error("Error loading material metadata %s: %s" % (file, str(e)))
                     
                 # create new Material object
                 self._materials[jsonObj['name']] = Material()
@@ -66,8 +66,8 @@ class MaterialFactory(object):
                 # load texture
                 try:
                     self._materials[jsonObj['name']].name = jsonObj['name']
-                    self._materials[jsonObj['name']].sustain = jsonObj['sustain']
-                    self._materials[jsonObj['name']].clipping = jsonObj['clipping']
+                    self._materials[jsonObj['name']].sustain = int(jsonObj['sustain'])
+                    self._materials[jsonObj['name']].clipping = bool(jsonObj['clipping'])
                     self._materials[jsonObj['name']].texture = Transform.Tools.tex_coords(
                         tuple(jsonObj['texture']['mapping']['top']),
                         tuple(jsonObj['texture']['mapping']['bottom']),

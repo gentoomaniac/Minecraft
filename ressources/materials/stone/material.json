@@ -1,6 +1,6 @@
 {
     "name": "Stone",
-    "sustain": "4",
+    "sustain": 4,
     "texture": {
         "ressource": "texture.png",
         "mapping": {
@@ -9,5 +9,5 @@
             "sides": [0, 1]
         }
     },
-    "clipping": "True"
+    "clipping": true
 }

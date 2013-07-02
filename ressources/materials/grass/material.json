@@ -1,6 +1,6 @@
 {
     "name": "Grass",
-    "sustain": "1",
+    "sustain": 1,
     "texture": {
         "ressource": "texture.png",
         "mapping": {
@@ -9,5 +9,5 @@
             "sides": [0, 1]
         }
     },
-    "clipping": "True"
+    "clipping": true
 }
