@@ -21,7 +21,7 @@ class Savegame(object):
         log = logging.getLogger('save game')
         log.debug('saving game ...')
         try:
-            saveFile = gzip.open(os.path.join(EC.EngineConfig.Instnace().getPath(), Savegame.NAME), 'w')
+            saveFile = gzip.open(os.path.join(EC.EngineConfig.Instance().getPath(), Savegame.NAME), 'w')
             log.debug('writing data')
             saveFile.write("%s\n" % (player.toJson(),))
             for coord in world.getBlockPositions():

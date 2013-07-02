@@ -6,7 +6,7 @@
         "mapping": {
             "top": [0, 1],
             "bottom": [0, 0],
-            "sides": [0, 1]
+            "sides": [1, 0]
         }
     },
     "clipping": false
