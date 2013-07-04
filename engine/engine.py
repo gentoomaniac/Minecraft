@@ -172,7 +172,7 @@ class Core(pyglet.window.Window):
                     dy *= -1
                 # in case were only moving sidewards we need to reset dy and m to
                 # not apply the normal view angle
-                if self.strafe[1] and not self.strafe[2]:
+                if self.strafe[1] and not self.strafe[0] and not self.strafe[2]:
                     dy = 0.0
                     m = 1
                 # When you are flying up or down, you have less left and right
