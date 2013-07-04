@@ -117,6 +117,12 @@ class Core(pyglet.window.Window):
     def get_motion_vector(self):
         """ Returns the current motion vector indicating the velocity of the
         player.
+        CAUTION: keep in mind that x,y,z are the pyglet versions whereas z is the
+        hight dimension (math y)
+        
+        dy = Hight
+        dx = Left (?)
+        dz = Right (?)
 
         Returns
         -------
@@ -124,26 +130,57 @@ class Core(pyglet.window.Window):
             Tuple containing the velocity in x, y, and z respectively.
 
         """
+        
+        # check if there is any movement
         if any(self.strafe):
+            # First element is rotation of the player in the x-z plane (ground
+            # plane) measured from the z-axis down. The second is the rotation
+            # angle from the ground plane up. Rotation is in degrees.
+            #
+            # The vertical plane rotation ranges from -90 (looking straight down) to
+            # 90 (looking straight up). The horizontal rotation range is unbounded.
             x, y = self._player.rotation
+                        
+            # get ground degrees.
             strafe = math.degrees(math.atan2(self.strafe[0], self.strafe[1]))
+            
+            # get Y angle from player
             y_angle = math.radians(y)
+            # get radians for ground plane radians and add movement
             x_angle = math.radians(x + strafe)
+            
+            # if player is flying we need to move in 3 dimensions
             if self._player.flying:
+                """ This if handles the straight up/down movement.
+                 This is relative to the ground so we need to handle a movement in the other
+                 dimensions at the same time.
+                 In this case let's assume a 45 degree movement otherwise 90 straight
+                """
+                if self.strafe[2] != 0:
+                    self.log.debug('moving straight up/down')
+                    if self.strafe[0] or self.strafe[1]:
+                        y_angle = math.radians(45)
+                    else:
+                        y_angle = math.radians(90)
+                    
                 m = math.cos(y_angle)
                 dy = math.sin(y_angle)
-                if self.strafe[1]:
-                    # Moving left or right.
-                    dy = 0.0
-                    m = 1
-                if self.strafe[0] > 0:
+                
+                # if not explizitly moving up, use the normal behavior
+                if self.strafe[0] > 0 and not self.strafe[2] or self.strafe[2] < 0:
                     # Moving backwards.
                     dy *= -1
+                # in case were only moving sidewards we need to reset dy and m to
+                # not apply the normal view angle
+                if self.strafe[1] and not self.strafe[2]:
+                    dy = 0.0
+                    m = 1
                 # When you are flying up or down, you have less left and right
                 # motion.
                 dx = math.cos(x_angle) * m
                 dz = math.sin(x_angle) * m
             else:
+                # no hight movement
                 dy = 0.0
                 dx = math.cos(x_angle)
                 dz = math.sin(x_angle)
@@ -334,10 +371,10 @@ class Core(pyglet.window.Window):
         elif symbol == key.D:
             self.strafe[1] += 1
         elif symbol == key.C:
-            if modifiers & key.MOD_CTRL:
-                self.conf.saveConfig()
-            elif self._player.flying:
+            if self._player.flying:
                 self.strafe[2] -= 1
+            elif modifiers & key.MOD_CTRL:
+                self.conf.saveConfig()
             else:
                 self._player.isCrouch = True
                 pos = list(self._player.position)
@@ -382,13 +419,13 @@ class Core(pyglet.window.Window):
         elif symbol == key.D:
             self.strafe[1] -= 1
         elif symbol == key.C:
-            if not modifiers & key.MOD_CTRL:
+            if self._player.flying:
+                self.strafe[2] += 1
+            elif not modifiers & key.MOD_CTRL:
                 self._player.isCrouch = False
                 pos = list(self._player.position)
                 pos[1] += self.conf.getConfValue('playerHight') - self.conf.getConfValue('crouchHight')
-                self._player.position = tuple(pos)
-            elif self._player.flying:
-                self.strafe[2] += 1
+                self._player.position = tuple(pos) 
         elif symbol == key.SPACE:
             if self._player.flying:
                 self.strafe[2] -= 1
