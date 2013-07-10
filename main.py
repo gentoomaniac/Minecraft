@@ -1,11 +1,22 @@
-#!/usr/bin/env python                                                              
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+"""
+    Usage:
+        main.py [options]
+
+    Options:
+        --version           show version number
+        -h, --help          show this help message and exit
+        -d, --debug         enable debug logging
+        --level=savegame    load the specified savegame
+"""
 
 import logging
 import sys
 import os
 import syslog
-from optparse import OptionParser
+from docopt import docopt
 
 import engine.EngineConfig as EC
 import engine.engine as Engine
@@ -18,21 +29,18 @@ def main():
                     datefmt='%a, %d %b %Y %H:%M:%S',
                     filename='debug.log')
     log = logging.getLogger(__name__)
-    
+
     log.debug(' #################### Starting ####################')
-    
-    # get config object
+
+    """ Create config object and parse command line options
+    """
     conf = EC.EngineConfig.Instance()
     conf.setPath(os.path.abspath(os.path.join(os.path.dirname(__file__))))
     conf.loadConfig()
     conf.setConfValue('baseDir', os.path.dirname(__file__))
-    
-    """ Create config object and parse command line options
-    """
-    parser = OptionParser()
-    parser.add_option("-l", "--level", dest="level",
-                    help="load level", metavar="FILE")
-    
+
+    log.debug((docopt(__doc__, version='0.1')))
+
     log.debug('Creating core object')
     gfx = Engine.Core()
     # Hide the mouse cursor and prevent the mouse from leaving the window.

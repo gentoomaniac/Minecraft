@@ -19,9 +19,9 @@ TEXTURE_PATH = 'ressources/texture.png'
 class Model(object):
 
     def __init__(self):
-        
+
         self.log = logging.getLogger("Model")
-        
+
         self.conf = EC.EngineConfig.Instance()
 
         # A Batch is a collection of vertex lists for batched rendering.
@@ -35,10 +35,10 @@ class Model(object):
         self.queue = deque()
 
         self._materialFactory = Materials.MaterialFactory.Instance()
-        
+
         # all shown blocks.
         self.visibleWorld = {}
-        
+
         # This defines all the blocks that are currently in the world.
         (self.world, self.player) = Savegame.Savegame.load()
         if self.world is None:
@@ -63,7 +63,7 @@ class Model(object):
         n = 80  # 1/2 width and height of world
         s = 1  # step size
         y = 0  # initial y height
-        
+
         # create an n x n sized plane with two layers
         for x in xrange(-n, n + 1, s):
             for z in xrange(-n, n + 1, s):
@@ -175,7 +175,7 @@ class Model(object):
             if immediate:
                 if self.world.existsBlockAt(position):
                     self.hide_block(position)
-                    
+
                 self.check_neighbors(position)
             self.world.removeBlock(position)
             self.sectors[Transform.Tools.sectorize(position, self.conf.getConfValue('sectorSize'))].remove(position)
@@ -285,8 +285,8 @@ class Model(object):
         for position in self.sectors.get(sector, []):
             if not self.world.existsBlockAt(position) and self.exposed(position):
                 self.show_block(position, False)
-                                
-                                
+
+
     def hide_sector(self, sector):
         """ Ensure all blocks in the given sector that should be hidden are
         removed from the canvas.
@@ -353,6 +353,6 @@ class Model(object):
     def process_entire_queue(self):
         """ Process the entire queue with no breaks.
 
-        """ 
+        """
         while self.queue:
             self._dequeue()

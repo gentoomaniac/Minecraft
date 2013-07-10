@@ -12,16 +12,17 @@ import EngineConfig as EC
 
 class Savegame(object):
     """ This class handles a savgame
-    
+
     """
     NAME = "save.gz"
-   
+
     @staticmethod
     def save(world, player):
         log = logging.getLogger('save game')
         log.debug('saving game ...')
         try:
-            saveFile = gzip.open(os.path.join(EC.EngineConfig.Instance().getPath(), Savegame.NAME), 'w')
+            saveFile = gzip.open(os.path.join(
+                EC.EngineConfig.Instance().getPath(), Savegame.NAME), 'w')
             log.debug('writing data')
             saveFile.write("%s\n" % (player.toJson(),))
             for coord in world.getBlockPositions():
@@ -29,7 +30,7 @@ class Savegame(object):
             saveFile.close()
         except Exception, e:
             log.error('saving failed: %s' % (str(e),))
-    
+
     @staticmethod
     def load(name="save.gz"):
         log = logging.getLogger('load game')
@@ -37,7 +38,8 @@ class Savegame(object):
         world = World.World()
         player = Player.Player()
         try:
-            saveFile = gzip.open(os.path.join(EC.EngineConfig.Instance().getPath(), Savegame.NAME), 'r')
+            saveFile = gzip.open(os.path.join(
+                EC.EngineConfig.Instance().getPath(), Savegame.NAME), 'r')
             player.fromJson(saveFile.readline())
             for line in saveFile.readlines():
                 tmp = Block.Block()
@@ -46,5 +48,5 @@ class Savegame(object):
         except Exception, e:
             log.error('loading failed: %s' % (e,))
             return None
-            
+
         return (world, player)

@@ -10,7 +10,7 @@ class Block(object):
 
     def __init__(self, position=None, material=None):
         self.log = logging.getLogger("Block")
-    
+
         self._isVisible = False
         # pyglet `VertextList` for shown blocks
         self._vertex = None
@@ -23,55 +23,55 @@ class Block(object):
             self._material = material
             self._life = material.sustain
 
-        
+
     def destroy(self):
         if self._vertex is not None:
             self._vertex.delete()
-        
+
     def decreaseLife(self, step=1):
         try:
             self._life -= step
         except TypeError, e:
             self.log.debug("%s - type: %s" % (str(e), type(self._life)))
-        
+
     def isAlive(self):
         if self._life > 0:
             return True
         else:
             return False
-        
+
     def getLife(self):
         return self._life
 
     def getTexture(self):
         return self._material.texture
-    
+
     def getVertex(self):
         return self._vertex
-    
+
     def setVertex(self, vertex):
         self._vertex = vertex
-        
+
     def deleteVertex(self):
         del self._vertex
-    
+
     def getMaterial(self):
         return self._material
-    
+
     def getPosition(self):
         return self._position
-    
+
     def isVisible(self):
         return self._isVisible
-    
+
     def setVisible(self, visible):
         self._isVisible = visible
 
-            
-        
+
+
     def getMaterial(self):
         return self._material.name
-    
+
     def toJson(self):
         out = {
             'position': self._position,
@@ -80,7 +80,7 @@ class Block(object):
             'visible': self._isVisible
             }
         return json.dumps(out)
-    
+
     def fromJson(self, data):
         materialFactory = Materials.MaterialFactory.Instance()
         obj = json.loads(data)

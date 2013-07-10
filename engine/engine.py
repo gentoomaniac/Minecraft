@@ -20,14 +20,14 @@ import Model
 
 class Core(pyglet.window.Window):
     """ This is the graphics engine
-    
+
     """
 
     def __init__(self, *args, **kwargs):
         self.log = logging.getLogger("Core")
         # get config object
         self.conf = EC.EngineConfig.Instance()
-        
+
         super(Core, self).__init__(width=self.conf.getConfValue('screenWidth'),
                height=self.conf.getConfValue('screenHeight'),
                caption="%s v%s" % (self.conf.APP_NAME, self.conf.APP_VERSION),
@@ -41,7 +41,7 @@ class Core(pyglet.window.Window):
         #
         # First element is -1 when moving forward, 1 when moving back, and 0
         # otherwise. The second element is -1 when moving left, 1 when moving
-        # right, and 0 otherwise. Third element is 1 when flying up -1 when 
+        # right, and 0 otherwise. Third element is 1 when flying up -1 when
         # flying down and 0 otherwise
         self.strafe = [0, 0, 0]
 
@@ -67,21 +67,21 @@ class Core(pyglet.window.Window):
             self._player = self.model.player
         else:
             self._player = Player()
-            
+
         self._materialFactory = Materials.MaterialFactory.Instance()
 
         # A list of blocks the player can place. Hit num keys to cycle.
         self._player.inventory = self._materialFactory.keys()
-        
+
         # The current block the user can place. Hit num keys to cycle.
         self._selectedBlock = self._materialFactory.getMaterial(self._player.inventory[0])
-                
+
         # The label that is displayed in the top left of the canvas.
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18,
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top',
             color=(0, 0, 0, 255))
 
-        
+
         # position of block in focus to print in lable
         self.focusedBlock = tuple()
 
@@ -117,9 +117,7 @@ class Core(pyglet.window.Window):
     def get_motion_vector(self):
         """ Returns the current motion vector indicating the velocity of the
         player.
-        CAUTION: keep in mind that x,y,z are the pyglet versions whereas z is the
-        hight dimension (math y)
-        
+
         dy = Hight
         dx = Left (?)
         dz = Right (?)
@@ -130,51 +128,64 @@ class Core(pyglet.window.Window):
             Tuple containing the velocity in x, y, and z respectively.
 
         """
-        
+
         # check if there is any movement
         if any(self.strafe):
-            # First element is rotation of the player in the x-z plane (ground
-            # plane) measured from the z-axis down. The second is the rotation
-            # angle from the ground plane up. Rotation is in degrees.
-            #
-            # The vertical plane rotation ranges from -90 (looking straight down) to
-            # 90 (looking straight up). The horizontal rotation range is unbounded.
+            """ First element is rotation of the player in the x-z plane
+                (ground plane) measured from the z-axis down. The second is
+                the rotation angle from the ground plane up. Rotation is in
+                degrees.
+
+                The vertical plane rotation ranges from -90 (looking straight
+                down) to 90 (looking straight up). The horizontal rotation
+                range is unbounded.
+            """
             x, y = self._player.rotation
-                        
+
             # get ground degrees.
             strafe = math.degrees(math.atan2(self.strafe[0], self.strafe[1]))
-            
+
             # get Y angle from player
             y_angle = math.radians(y)
             # get radians for ground plane radians and add movement
             x_angle = math.radians(x + strafe)
-            
+
             # if player is flying we need to move in 3 dimensions
             if self._player.flying:
                 """ This if handles the straight up/down movement.
-                 This is relative to the ground so we need to handle a movement in the other
-                 dimensions at the same time.
-                 In this case let's assume a 45 degree movement otherwise 90 straight
+                 This is relative to the ground so we need to handle a movement
+                 in the other dimensions seperately.
+                 In this case let's assume a 45 degree movement otherwise 90
+                 straight
                 """
                 if self.strafe[2] != 0:
-                    self.log.debug('moving straight up/down')
+                    """ if we have a 2 dimensional movement at the same time
+                        we split the upwards movement into half.
+                        Otherwise the projection to X/Z would be 0 so we the
+                        movement in the first two dimensions would be 0.
+                    """
                     if self.strafe[0] or self.strafe[1]:
                         y_angle = math.radians(45)
                     else:
                         y_angle = math.radians(90)
-                    
+
                 m = math.cos(y_angle)
                 dy = math.sin(y_angle)
-                
+
                 # if not explizitly moving up, use the normal behavior
-                if self.strafe[0] > 0 and not self.strafe[2] or self.strafe[2] < 0:
+                if self.strafe[0] > 0 and not self.strafe[2] or \
+                        self.strafe[2] < 0:
                     # Moving backwards.
                     dy *= -1
-                # in case were only moving sidewards we need to reset dy and m to
-                # not apply the normal view angle
-                if self.strafe[1] and not self.strafe[0] and not self.strafe[2]:
+
+                """ in case were only moving sidewards we need to reset dy and
+                    m to not apply the normal view angle to the movement
+                """
+                if self.strafe[1] and not self.strafe[0] and not \
+                        self.strafe[2]:
                     dy = 0.0
                     m = 1
+
                 # When you are flying up or down, you have less left and right
                 # motion.
                 dx = math.cos(x_angle) * m
@@ -239,10 +250,10 @@ class Core(pyglet.window.Window):
         # collisions
         x, y, z = self._player.position
         if self._player.isCrouch:
-            x, y, z = self.collide((x + dx, y + dy, z + dz), 
+            x, y, z = self.collide((x + dx, y + dy, z + dz),
                 self.conf.getConfValue('crouchHight'))
         else:
-            x, y, z = self.collide((x + dx, y + dy, z + dz), 
+            x, y, z = self.collide((x + dx, y + dy, z + dz),
                 self.conf.getConfValue('playerHight'))
         self._player.position = (x, y, z)
 
@@ -288,7 +299,7 @@ class Core(pyglet.window.Window):
                     if not self._materialFactory.getMaterial(
                             self.model.world.getBlock(tuple(op)).getMaterial()).clipping:
                         continue
-                    
+
                     p[i] -= (d - pad) * face[i]
                     if face == (0, -1, 0) or face == (0, 1, 0):
                         # You are colliding with the ground or ceiling, so stop
@@ -358,7 +369,7 @@ class Core(pyglet.window.Window):
             Number representing any modifying keys that were pressed.
 
         """
-        
+
         if symbol == key.W:
             self.strafe[0] -= 1
         elif symbol == key.S:
@@ -425,11 +436,11 @@ class Core(pyglet.window.Window):
                 self._player.isCrouch = False
                 pos = list(self._player.position)
                 pos[1] += self.conf.getConfValue('playerHight') - self.conf.getConfValue('crouchHight')
-                self._player.position = tuple(pos) 
+                self._player.position = tuple(pos)
         elif symbol == key.SPACE:
             if self._player.flying:
                 self.strafe[2] -= 1
-                
+
 
     def on_resize(self, width, height):
         """ Called when the window is resized to a new `width` and `height`.
@@ -532,7 +543,7 @@ class Core(pyglet.window.Window):
         """
         glColor3d(255, 0, 0)
         self.reticle.draw(GL_LINES)
-    
+
     def setup_fog(self):
         """ Configure the OpenGL fog properties.
 
@@ -562,6 +573,6 @@ class Core(pyglet.window.Window):
         # Enable culling (not rendering) of back-facing facets -- facets that aren't
         # visible to you.
         #glEnable(GL_CULL_FACE)
-        
+
         self.setup_fog()
         pyglet.app.run()
