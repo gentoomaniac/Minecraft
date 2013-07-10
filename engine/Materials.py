@@ -14,7 +14,7 @@ class Material(object):
 
     def __init__(self):
         self.name = ''
-        self.texture = None
+        self.texture = {}
         self.sustain = 0
         self.textureGroup = None
         self.clipping = True
@@ -70,10 +70,14 @@ class MaterialFactory(object):
                     self._materials[jsonObj['name']].name = jsonObj['name']
                     self._materials[jsonObj['name']].sustain = int(jsonObj['sustain'])
                     self._materials[jsonObj['name']].clipping = bool(jsonObj['clipping'])
-                    self._materials[jsonObj['name']].texture = Transform.Tools.tex_coords(
-                        tuple(jsonObj['texture']['mapping']['top']),
-                        tuple(jsonObj['texture']['mapping']['bottom']),
-                        tuple(jsonObj['texture']['mapping']['sides']))
+                    self._materials[jsonObj['name']].texture['top'] = Transform.tex_coords(
+                        tuple(jsonObj['texture']['mapping']['top']['top']),
+                        tuple(jsonObj['texture']['mapping']['top']['bottom']),
+                        tuple(jsonObj['texture']['mapping']['top']['sides']))
+                    self._materials[jsonObj['name']].texture['middle'] = Transform.tex_coords(
+                        tuple(jsonObj['texture']['mapping']['middle']['top']),
+                        tuple(jsonObj['texture']['mapping']['middle']['bottom']),
+                        tuple(jsonObj['texture']['mapping']['middle']['sides']))
                     # A TextureGroup manages an OpenGL texture.
                     self._materials[jsonObj['name']].textureGroup = textureFactory.loadTexture(
                         os.path.join(absPath,jsonObj['texture']['ressource']))

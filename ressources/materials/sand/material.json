@@ -4,9 +4,16 @@
     "texture": {
         "ressource": "texture.png",
         "mapping": {
-            "top": [0, 1],
-            "bottom": [0, 0],
-            "sides": [1, 0]
+            "top": {
+                "top": [0, 1],
+                "bottom": [0, 0],
+                "sides": [1, 0]
+            },
+            "middle": {
+                "top": [0, 1],
+                "bottom": [0, 0],
+                "sides": [1, 0]
+            }
         }
     },
     "clipping": true

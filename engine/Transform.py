@@ -1,76 +1,68 @@
+def cube_vertices(x, y, z, n):
+    """ Return the vertices of the cube at position x, y, z with size 2*n.
 
-class Tools:
+    """
+    return [
+        x-n,y+n,z-n, x-n,y+n,z+n, x+n,y+n,z+n, x+n,y+n,z-n,  # top
+        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n,  # bottom
+        x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n,z+n, x-n,y+n,z-n,  # left
+        x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n,z-n, x+n,y+n,z+n,  # right
+        x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n,z+n, x-n,y+n,z+n,  # front
+        x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n,  # back
+    ]
 
-    @staticmethod
-    def cube_vertices(x, y, z, n):
-        """ Return the vertices of the cube at position x, y, z with size 2*n.
+def tex_coord(x, y, n=2):
+    """ Return the bounding vertices of the texture square.
+        n will have an impact on texture loading.
+        n=2 splits a 128x128 texture into 4 squares
+    """
+    m = 1.0 / n
+    dx = x * m
+    dy = y * m
+    return dx, dy, dx + m, dy, dx + m, dy + m, dx, dy + m
 
-        """
-        return [
-            x-n,y+n,z-n, x-n,y+n,z+n, x+n,y+n,z+n, x+n,y+n,z-n,  # top
-            x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n,  # bottom
-            x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n,z+n, x-n,y+n,z-n,  # left
-            x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n,z-n, x+n,y+n,z+n,  # right
-            x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n,z+n, x-n,y+n,z+n,  # front
-            x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n,  # back
-        ]
+def tex_coords(top, bottom, side):
+    """ Return a list of the texture squares for the top, bottom and side.
 
-    @staticmethod
-    def tex_coord(x, y, n=2):
-        """ Return the bounding vertices of the texture square.
-            n will have an impact on texture loading.
-            n=2 splits a 128x128 texture into 4 squares
-        """
-        m = 1.0 / n
-        dx = x * m
-        dy = y * m
-        return dx, dy, dx + m, dy, dx + m, dy + m, dx, dy + m
+    """
+    top = tex_coord(*top)
+    bottom = tex_coord(*bottom)
+    side = tex_coord(*side)
+    result = []
+    result.extend(top)
+    result.extend(bottom)
+    result.extend(side * 4)
+    return result
 
-    @staticmethod
-    def tex_coords(top, bottom, side):
-        """ Return a list of the texture squares for the top, bottom and side.
+def normalize(position):
+    """ Accepts `position` of arbitrary precision and returns the block
+    containing that position.
 
-        """
-        top = Tools.tex_coord(*top)
-        bottom = Tools.tex_coord(*bottom)
-        side = Tools.tex_coord(*side)
-        result = []
-        result.extend(top)
-        result.extend(bottom)
-        result.extend(side * 4)
-        return result
+    Parameters
+    ----------
+    position : tuple of len 3
 
-    @staticmethod
-    def normalize(position):
-        """ Accepts `position` of arbitrary precision and returns the block
-        containing that position.
+    Returns
+    -------
+    block_position : tuple of ints of len 3
 
-        Parameters
-        ----------
-        position : tuple of len 3
+    """
+    x, y, z = position
+    x, y, z = (int(round(x)), int(round(y)), int(round(z)))
+    return (x, y, z)
 
-        Returns
-        -------
-        block_position : tuple of ints of len 3
+def sectorize(position, sectorSize):
+    """ Returns a tuple representing the sector for the given `position`.
 
-        """
-        x, y, z = position
-        x, y, z = (int(round(x)), int(round(y)), int(round(z)))
-        return (x, y, z)
+    Parameters
+    ----------
+    position : tuple of len 3
 
-    @staticmethod
-    def sectorize(position, sectorSize):
-        """ Returns a tuple representing the sector for the given `position`.
+    Returns
+    -------
+    sector : tuple of len 3
 
-        Parameters
-        ----------
-        position : tuple of len 3
-
-        Returns
-        -------
-        sector : tuple of len 3
-
-        """
-        x, y, z = Tools.normalize(position)
-        x, y, z = x / sectorSize, y / sectorSize, z / sectorSize
-        return (x, 0, z)
+    """
+    x, y, z = normalize(position)
+    x, y, z = x / sectorSize, y / sectorSize, z / sectorSize
+    return (x, 0, z)

@@ -52,9 +52,6 @@ class Block(object):
     def setVertex(self, vertex):
         self._vertex = vertex
 
-    def deleteVertex(self):
-        del self._vertex
-
     def getMaterial(self):
         return self._material
 

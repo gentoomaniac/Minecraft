@@ -50,7 +50,7 @@ class Model(object):
             # make blocks visible after loading
             for position in self.world.getBlockPositions():
                 # sectorize blocks
-                self.sectors.setdefault(Transform.Tools.sectorize(position, self.conf.getConfValue('sectorSize')), []).append(position)
+                self.sectors.setdefault(Transform.sectorize(position, self.conf.getConfValue('sectorSize')), []).append(position)
                 if self.world.getBlock(position).isVisible():
                     self.show_block(position)
 
@@ -116,7 +116,7 @@ class Model(object):
         dx, dy, dz = vector
         previous = None
         for _ in xrange(max_distance * m):
-            key = Transform.Tools.normalize((x, y, z))
+            key = Transform.normalize((x, y, z))
             if key != previous and self.world.existsBlockAt(key):
                 return key, previous
             previous = key
@@ -151,7 +151,7 @@ class Model(object):
         if self.world.existsBlockAt(position):
             self.remove_block(position, immediate)
         self.world.addBlock(position, material)
-        self.sectors.setdefault(Transform.Tools.sectorize(position, self.conf.getConfValue('sectorSize')), []).append(position)
+        self.sectors.setdefault(Transform.sectorize(position, self.conf.getConfValue('sectorSize')), []).append(position)
         if immediate:
             if self.exposed(position):
                 self.show_block(position)
@@ -173,12 +173,11 @@ class Model(object):
             self.world.getBlock(position).decreaseLife()
         else:
             if immediate:
-                if self.world.existsBlockAt(position):
-                    self.hide_block(position)
-
+                self.hide_block(position)
                 self.check_neighbors(position)
+                
             self.world.removeBlock(position)
-            self.sectors[Transform.Tools.sectorize(position, self.conf.getConfValue('sectorSize'))].remove(position)
+            self.sectors[Transform.sectorize(position, self.conf.getConfValue('sectorSize'))].remove(position)
 
 
     def check_neighbors(self, position):
@@ -198,7 +197,7 @@ class Model(object):
                     self.show_block(key)
             else:
                 if self.world.existsBlockAt(key):
-                    self.hide_block(key)
+                    self.hide_block(key, immediate=False)
 
 
     def show_block(self, position, immediate=True):
@@ -226,16 +225,32 @@ class Model(object):
         ----------
         position : tuple of len 3
             The (x, y, z) position of the block to show.
-        texture : list of len 3
-            The coordinates of the texture squares. Use `tex_coords()` to
-            generate.
+        """
+        x, y, z = position
+        try:
+            self._paint_block(position)
+        except Exception, e:
+            self.log.error("Showing block at %s failed: %s" % (position, e))
+            
+    def _paint_block(self, position):
+        """ Creates vertexes for the block.
 
+        Parameters
+        ----------
+        position : tuple of len 3
+            The (x, y, z) position of the block to show.
         """
         x, y, z = position
         try:
             block = self.world.getBlock(position)
-            vertex_data = Transform.Tools.cube_vertices(x, y, z, 0.5)
-            texture_data = list(block.getTexture())
+            vertex_data = Transform.cube_vertices(x, y, z, 0.5)
+
+            # if block not on top choose diffrent textures
+            if self.world.existsBlockAt((x, y+1, z)):
+                texture_data = list(block.getTexture()['middle'])
+            else:
+                texture_data = list(block.getTexture()['top'])
+
             # create vertex list
             # FIXME Maybe `add_indexed()` should be used instead
             block.setVisible(True)
@@ -243,8 +258,7 @@ class Model(object):
                 ('v3f/static', vertex_data),
                 ('t2f/static', texture_data)))
         except Exception, e:
-            self.log.error("Showing block at %s failed: %s" % (position, e))
-
+            self.log.error("Painting block at %s failed: %s" % (position, e))
 
     def hide_block(self, position, immediate=True):
         """ Hide the block at the given `position`. Hiding does not remove the
@@ -272,8 +286,9 @@ class Model(object):
         try:
             block = self.world.getBlock(position)
             block.setVisible(False)
-            vertex = block.getVertex()
-            del vertex
+            if block.getVertex():
+                block.getVertex().delete()
+                block.setVertex(None)
         except Exception, e:
             self.log.error("Hiding block at %s failed: %s" % (position,e))
 
@@ -346,7 +361,7 @@ class Model(object):
 
         """
         start = time.clock()
-        while self.queue and time.clock() - start < 1.0 / TICKS_PER_SEC:
+        while self.queue and time.clock() - start < 1.0 / self.conf.getConfValue('ticksPerSecond'):
             self._dequeue()
 
 

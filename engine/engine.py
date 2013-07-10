@@ -212,7 +212,7 @@ class Core(pyglet.window.Window):
 
         """
         self.model.process_queue()
-        sector = Transform.Tools.sectorize(self._player.position, self.conf.getConfValue('sectorSize'))
+        sector = Transform.sectorize(self._player.position, self.conf.getConfValue('sectorSize'))
         if sector != self.sector:
             self.model.change_sectors(self.sector, sector)
             if self.sector is None:
@@ -280,7 +280,7 @@ class Core(pyglet.window.Window):
         # tall grass. If >= .5, you'll fall through the ground.
         pad = 0.25
         p = list(position)
-        np = Transform.Tools.normalize(position)
+        np = Transform.normalize(position)
         for face in Block.FACES:  # check all surrounding blocks
             for i in xrange(3):  # check each dimension independently
                 if not face[i]:
@@ -511,7 +511,7 @@ class Core(pyglet.window.Window):
         if block:
             x, y, z = block
             self.focusedBlock = block
-            vertex_data = Transform.Tools.cube_vertices(x, y, z, 0.51)
+            vertex_data = Transform.cube_vertices(x, y, z, 0.51)
             glColor3d(0, 0, 0)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
             pyglet.graphics.draw(24, GL_QUADS, ('v3f/static', vertex_data))
