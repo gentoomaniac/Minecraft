@@ -148,14 +148,15 @@ class Model(object):
             Whether or not to draw the block immediately.
 
         """
-        if self.world.existsBlockAt(position):
-            self.remove_block(position, immediate)
         self.world.addBlock(position, material)
         self.sectors.setdefault(Transform.sectorize(position, self.conf.getConfValue('sectorSize')), []).append(position)
+        
+        # hide newly hidden blocks 
+        self.check_neighbors(position)
+        
         if immediate:
             if self.exposed(position):
                 self.show_block(position)
-            self.check_neighbors(position)
 
 
     def remove_block(self, position, immediate=True):
@@ -169,15 +170,19 @@ class Model(object):
             Whether or not to immediately remove block from canvas.
 
         """
-        if self.world.getBlock(position).isAlive():
-            self.world.getBlock(position).decreaseLife()
-        else:
+        
+        # if block is dead hide it and remove it
+        if not self.world.getBlock(position).isAlive():
             if immediate:
                 self.hide_block(position)
-                self.check_neighbors(position)
                 
             self.world.removeBlock(position)
             self.sectors[Transform.sectorize(position, self.conf.getConfValue('sectorSize'))].remove(position)
+            
+            # after removing show newly exposed blocks
+            self.check_neighbors(position)
+        else:
+            self.world.getBlock(position).decreaseLife()
 
 
     def check_neighbors(self, position):
@@ -193,10 +198,10 @@ class Model(object):
             if not self.world.existsBlockAt(key):
                 continue
             if self.exposed(key):
-                if not self.world.existsBlockAt(key):
+                if not self.world.getBlock(key).isVisible():
                     self.show_block(key)
             else:
-                if self.world.existsBlockAt(key):
+                if self.world.getBlock(key).isVisible():
                     self.hide_block(key, immediate=False)
 
 
