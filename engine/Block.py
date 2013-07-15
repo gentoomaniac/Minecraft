@@ -8,19 +8,17 @@ class Block(object):
 
     """
 
-    def __init__(self, position=None, material=None):
+    def __init__(self, position=None, material=None, isTop=True):
         self.log = logging.getLogger("Block")
 
         self._isVisible = False
         # pyglet `VertextList` for shown blocks
         self._vertex = None
         self._position = None
-        self._material = None
+        self._material = material
         self._life = None
-
-        if position is not None and material is not None:
-            self._position = position
-            self._material = material
+        self._isTop = isTop
+        if material:
             self._life = material.sustain
 
 
@@ -44,7 +42,10 @@ class Block(object):
         return self._life
 
     def getTexture(self):
-        return self._material.texture
+        if self._isTop:
+            return self._material.texture['top']
+        else:
+            return self._material.texture['middle']
 
     def getVertex(self):
         return self._vertex
@@ -61,6 +62,12 @@ class Block(object):
     def isVisible(self):
         return self._isVisible
 
+    def isTop(self):
+        return self._isTop
+    
+    def setTop(self, isTop):
+        self._isTop = isTop
+
     def setVisible(self, visible):
         self._isVisible = visible
 
@@ -74,6 +81,7 @@ class Block(object):
             'position': self._position,
             'material': self._material.name,
             'life': self._life,
+            'isTop': self._isTop,
             'visible': self._isVisible
             }
         return json.dumps(out)
@@ -83,8 +91,9 @@ class Block(object):
         obj = json.loads(data)
         self._position = tuple(obj['position'])
         self._material = materialFactory.getMaterial(obj['material'])
+        self._isTop = obj['isTop']
         self._life = obj['life']
-        self._isVisible = True #obj['visible']
+        self._isVisible = obj['visible']
 
 
 FACES = [

@@ -1,4 +1,5 @@
 import json
+import logging
 
 from Block import *
 
@@ -8,11 +9,15 @@ class World(object):
     """
 
     def __init__(self):
+        self.log = logging.getLogger("World")
         self._blocks = {}
 
     def addBlock(self, position, material):
         if position not in self._blocks:
-            self._blocks[position] = Block(position, material)
+            x, y, z = position
+            isTopBlock = False if (x, y+1, z) in self._blocks else True
+            
+            self._blocks[position] = Block(position, material, isTop=isTopBlock)
             self._blocks[position].setVisible(True)
         else:
             raise Exception('Already a block at %s' % (position,))

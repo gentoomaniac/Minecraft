@@ -13,6 +13,7 @@ import Block
 import World
 import EngineConfig as EC
 import Materials
+import Player
 
 TEXTURE_PATH = 'ressources/texture.png'
 
@@ -40,19 +41,21 @@ class Model(object):
         self.visibleWorld = {}
 
         # This defines all the blocks that are currently in the world.
-        (self.world, self.player) = Savegame.Savegame.load()
-        if self.world is None:
-            self.log.debug("Couldn't load a savegame. Creating new world ...")
-            self.world = World.World()
-            self.visibleWorld = {}
-            self._initialize()
-        else:
+        try:
+            (self.world, self.player) = Savegame.Savegame.load()
             # make blocks visible after loading
             for position in self.world.getBlockPositions():
                 # sectorize blocks
                 self.sectors.setdefault(Transform.sectorize(position, self.conf.getConfValue('sectorSize')), []).append(position)
                 if self.world.getBlock(position).isVisible():
                     self.show_block(position)
+        except Exception, e:
+            self.log.debug("Couldn't load a savegame. Creating new world ...")
+            self.world = World.World()
+            self.player = Player.Player()
+            self.visibleWorld = {}
+            self._initialize()
+
 
 
     def _initialize(self):
@@ -68,12 +71,12 @@ class Model(object):
         for x in xrange(-n, n + 1, s):
             for z in xrange(-n, n + 1, s):
                 # create a layer stone an grass everywhere.
-                self.add_block((x, y - 2, z), materials['Grass'])
-                self.add_block((x, y - 3, z), materials['Stone'])
+                self.add_block((x, y - 2, z), self._materialFactory.getMaterial('Grass'), immediate=False)
+                self.add_block((x, y - 3, z), self._materialFactory.getMaterial('Stone'), immediate=False)
                 if x in (-n, n) or z in (-n, n):
                     # create outer walls.
                     for dy in xrange(-1, 3):
-                        self.add_block((x, y + dy, z), materials['Stone'])
+                        self.add_block((x, y + dy, z), self._materialFactory.getMaterial('Stone'), immediate=False)
 
         # generate the hills randomly
         #o = n - 10
@@ -202,10 +205,10 @@ class Model(object):
                     self.show_block(key)
             else:
                 if self.world.getBlock(key).isVisible():
-                    self.hide_block(key, immediate=False)
+                    self.hide_block(key)
 
 
-    def show_block(self, position, immediate=True):
+    def show_block(self, position, immediate=False):
         """ Show the block at the given `position`. This method assumes the
         block has already been added with add_block()
 
@@ -250,11 +253,7 @@ class Model(object):
             block = self.world.getBlock(position)
             vertex_data = Transform.cube_vertices(x, y, z, 0.5)
 
-            # if block not on top choose diffrent textures
-            if self.world.existsBlockAt((x, y+1, z)):
-                texture_data = list(block.getTexture()['middle'])
-            else:
-                texture_data = list(block.getTexture()['top'])
+            texture_data = list(block.getTexture())
 
             # create vertex list
             # FIXME Maybe `add_indexed()` should be used instead
@@ -265,7 +264,7 @@ class Model(object):
         except Exception, e:
             self.log.error("Painting block at %s failed: %s" % (position, e))
 
-    def hide_block(self, position, immediate=True):
+    def hide_block(self, position, immediate=False):
         """ Hide the block at the given `position`. Hiding does not remove the
         block from the world.
 
@@ -288,14 +287,15 @@ class Model(object):
         """ Private implementation of the 'hide_block()` method.
 
         """
-        try:
+        if self.world.existsBlockAt(position):
             block = self.world.getBlock(position)
             block.setVisible(False)
-            if block.getVertex():
-                block.getVertex().delete()
-                block.setVertex(None)
-        except Exception, e:
-            self.log.error("Hiding block at %s failed: %s" % (position,e))
+            try:
+                if block.getVertex():
+                    block.getVertex().delete()
+                    block.setVertex(None)
+            except Exception, e:
+                self.log.error("Hiding block at %s failed: %s" % (position,e))
 
     def show_sector(self, sector):
         """ Ensure all blocks in the given sector that should be shown are
@@ -303,8 +303,8 @@ class Model(object):
 
         """
         for position in self.sectors.get(sector, []):
-            if not self.world.existsBlockAt(position) and self.exposed(position):
-                self.show_block(position, False)
+            if self.world.existsBlockAt(position) and self.exposed(position):
+                self.show_block(position)
 
 
     def hide_sector(self, sector):
@@ -314,7 +314,7 @@ class Model(object):
         """
         for position in self.sectors.get(sector, []):
             if self.world.existsBlockAt(position):
-                self.hide_block(position, True)
+                self.hide_block(position)
 
     def change_sectors(self, before, after):
         """ Move from sector `before` to sector `after`. A sector is a

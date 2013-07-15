@@ -332,9 +332,9 @@ class Core(pyglet.window.Window):
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
                 if previous:
-                    self.model.add_block(previous, self._selectedBlock)
+                    self.model.add_block(previous, self._selectedBlock, immediate=True)
             elif button == pyglet.window.mouse.LEFT and block:
-                self.model.remove_block(block)
+                self.model.remove_block(block, immediate=True)
         else:
             self.set_exclusive_mouse(True)
 
