@@ -16,6 +16,7 @@ import Savegame
 import EngineConfig as EC
 import Player
 import Model
+import UI
 
 
 class Core(pyglet.window.Window):
@@ -84,6 +85,8 @@ class Core(pyglet.window.Window):
 
         # position of block in focus to print in lable
         self.focusedBlock = tuple()
+        
+        self._hud = UI.HUD()
 
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
@@ -498,6 +501,7 @@ class Core(pyglet.window.Window):
         self.model.batch.draw()
         self.draw_focused_block()
         self.set_2d()
+        self._hud.draw()
         self.draw_label()
         self.draw_reticle()
 

@@ -14,7 +14,7 @@ class Block(object):
         self._isVisible = False
         # pyglet `VertextList` for shown blocks
         self._vertex = None
-        self._position = None
+        self._position = position
         self._material = material
         self._life = None
         self._isTop = isTop
