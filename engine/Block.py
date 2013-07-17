@@ -23,7 +23,7 @@ class Block(object):
 
 
     def destroy(self):
-        if self._vertex is not None:
+        if not self._vertex:
             self._vertex.delete()
 
     def decreaseLife(self, step=1):

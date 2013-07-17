@@ -67,16 +67,20 @@ class Model(object):
         s = 1  # step size
         y = 0  # initial y height
 
+        # cache materials
+        grass = self._materialFactory.getMaterial('Grass')
+        stone = self._materialFactory.getMaterial('Stone')
+        
         # create an n x n sized plane with two layers
         for x in xrange(-n, n + 1, s):
             for z in xrange(-n, n + 1, s):
                 # create a layer stone an grass everywhere.
-                self.add_block((x, y - 2, z), self._materialFactory.getMaterial('Grass'), immediate=False)
-                self.add_block((x, y - 3, z), self._materialFactory.getMaterial('Stone'), immediate=False)
+                self.add_block((x, y - 2, z), grass, immediate=False)
+                self.add_block((x, y - 3, z), stone, immediate=False)
                 if x in (-n, n) or z in (-n, n):
                     # create outer walls.
                     for dy in xrange(-1, 3):
-                        self.add_block((x, y + dy, z), self._materialFactory.getMaterial('Stone'), immediate=False)
+                        self.add_block((x, y + dy, z), stone, immediate=False)
 
         # generate the hills randomly
         #o = n - 10
@@ -251,6 +255,13 @@ class Model(object):
         x, y, z = position
         try:
             block = self.world.getBlock(position)
+            
+            if block.getVertex():
+                self.log.debug('Block at %s allready visible. This indicates an error!' % (position,))
+                return
+            else:
+                self.log.debug('Block at %s made visible' % (position,))
+            
             vertex_data = Transform.cube_vertices(x, y, z, 0.5)
 
             texture_data = list(block.getTexture())
