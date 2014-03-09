@@ -18,7 +18,6 @@ class World(object):
             isTopBlock = False if (x, y+1, z) in self._blocks else True
             
             self._blocks[position] = Block(position, material, isTop=isTopBlock)
-            self._blocks[position].setVisible(True)
         else:
             raise Exception('Already a block at %s' % (position,))
 

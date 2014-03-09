@@ -10,7 +10,6 @@ from pyglet.gl import *
 
 import Transform
 import Block
-import World
 import Materials
 import Savegame
 import EngineConfig as EC

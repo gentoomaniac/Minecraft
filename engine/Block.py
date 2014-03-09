@@ -11,7 +11,6 @@ class Block(object):
     def __init__(self, position=None, material=None, isTop=True):
         self.log = logging.getLogger("Block")
 
-        self._isVisible = False
         # pyglet `VertextList` for shown blocks
         self._vertex = None
         self._position = position
@@ -23,8 +22,10 @@ class Block(object):
 
 
     def destroy(self):
-        if not self._vertex:
+        try:
             self._vertex.delete()
+        except Exception, e:
+            self.log.debug("tried to delete non existing vertex")
 
     def decreaseLife(self, step=1):
         try:
@@ -59,18 +60,12 @@ class Block(object):
     def getPosition(self):
         return self._position
 
-    def isVisible(self):
-        return self._isVisible
 
     def isTop(self):
         return self._isTop
     
     def setTop(self, isTop):
         self._isTop = isTop
-
-    def setVisible(self, visible):
-        self._isVisible = visible
-
 
 
     def getMaterial(self):
@@ -93,7 +88,6 @@ class Block(object):
         self._material = materialFactory.getMaterial(obj['material'])
         self._isTop = obj['isTop']
         self._life = obj['life']
-        self._isVisible = obj['visible']
 
 
 FACES = [

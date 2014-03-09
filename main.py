@@ -13,9 +13,7 @@
 """
 
 import logging
-import sys
 import os
-import syslog
 from docopt import docopt
 
 import engine.EngineConfig as EC

@@ -47,8 +47,7 @@ class Model(object):
             for position in self.world.getBlockPositions():
                 # sectorize blocks
                 self.sectors.setdefault(Transform.sectorize(position, self.conf.getConfValue('sectorSize')), []).append(position)
-                if self.world.getBlock(position).isVisible():
-                    self.show_block(position)
+                self.show_sector(0)
         except Exception, e:
             self.log.debug("Couldn't load a savegame. Creating new world ...")
             self.world = World.World()
@@ -129,17 +128,48 @@ class Model(object):
             previous = key
             x, y, z = x + dx / m, y + dy / m, z + dz / m
         return None, None
+    
+    def view_test(self, source, target):
+        """ Check if plock at position has a line of sight to character.
 
-    def exposed(self, position):
+        Parameters
+        ----------
+        source : tuple of len 3
+            The (x, y, z) position to check visibility from.
+        target :tuple of len 3
+            The (x, y, z) position to check visibility to.
+        """
+        m = 8
+        x, y, z = source
+        dx, dy, dz = target
+        previous = None
+        for _ in xrange(max_distance * m):
+            key = Transform.normalize((x, y, z))
+            if key != previous and self.world.existsBlockAt(key):
+                return key, previous
+            previous = key
+            x, y, z = x + dx / m, y + dy / m, z + dz / m
+        return None, None
+
+    def exposed(self, position, toPlayer=True):
         """ Returns False is given `position` is surrounded on all 6 sides by
         blocks, True otherwise.
 
         """
+        isExposed = False
+        (px,py,pz) = self.player.position
+        ## ToDo: Currently shows all blocks with an exposed side.
+        ## This decreases performance.
+        ## Fix this to only show blocks visible to the player
         x, y, z = position
         for dx, dy, dz in Block.FACES:
             if not self.world.existsBlockAt((x + dx, y + dy, z + dz)):
-                return True
-        return False
+                if toPlayer:
+                    
+                isExposed = True
+                break
+        
+        return isExposed
 
     def add_block(self, position, material, immediate=True):
         """ Add a block with the given `texture` and `position` to the world.
@@ -205,10 +235,10 @@ class Model(object):
             if not self.world.existsBlockAt(key):
                 continue
             if self.exposed(key):
-                if not self.world.getBlock(key).isVisible():
+                if not self.exposed(position):
                     self.show_block(key)
             else:
-                if self.world.getBlock(key).isVisible():
+                if self.exposed(position):
                     self.hide_block(key)
 
 
@@ -259,19 +289,17 @@ class Model(object):
             if block.getVertex():
                 self.log.debug('Block at %s allready visible. This indicates an error!' % (position,))
                 return
-            else:
-                self.log.debug('Block at %s made visible' % (position,))
             
             vertex_data = Transform.cube_vertices(x, y, z, 0.5)
-
             texture_data = list(block.getTexture())
 
             # create vertex list
             # FIXME Maybe `add_indexed()` should be used instead
-            block.setVisible(True)
             block.setVertex(self.batch.add(24, GL_QUADS, self._materialFactory.getMaterial(block.getMaterial()).textureGroup,
                 ('v3f/static', vertex_data),
                 ('t2f/static', texture_data)))
+            
+            #self.log.debug('Block at %s made visible' % (position,))
         except Exception, e:
             self.log.error("Painting block at %s failed: %s" % (position, e))
 
@@ -300,11 +328,11 @@ class Model(object):
         """
         if self.world.existsBlockAt(position):
             block = self.world.getBlock(position)
-            block.setVisible(False)
             try:
                 if block.getVertex():
                     block.getVertex().delete()
                     block.setVertex(None)
+                    #self.log.debug('Block at %s made invisible' % (position,))
             except Exception, e:
                 self.log.error("Hiding block at %s failed: %s" % (position,e))
 
