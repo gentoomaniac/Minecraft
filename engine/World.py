@@ -1,5 +1,4 @@
-import json
-import logging
+import logger as l
 
 from Block import *
 
@@ -9,7 +8,7 @@ class World(object):
     """
 
     def __init__(self):
-        self.log = logging.getLogger("World")
+        self.log = l.getLogger("world")
         self._blocks = {}
 
     def addBlock(self, position, material):

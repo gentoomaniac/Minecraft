@@ -1,7 +1,6 @@
 import json
 import gzip
 import math
-import logging
 import os
 
 import World
@@ -9,6 +8,7 @@ import Player
 import Block
 import Materials
 import EngineConfig as EC
+import logger as l
 
 class Savegame(object):
     """ This class handles a savgame
@@ -18,7 +18,7 @@ class Savegame(object):
 
     @staticmethod
     def save(world, player):
-        log = logging.getLogger('save game')
+        log = l.getLogger('savegame')
         log.debug('saving game ...')
         try:
             saveFile = gzip.open(os.path.join(
@@ -33,7 +33,7 @@ class Savegame(object):
 
     @staticmethod
     def load(name="save.gz"):
-        log = logging.getLogger('load game')
+        log = l.getLogger('load game')
         log.debug('loading game ...')
         world = World.World()
         player = Player.Player()
@@ -43,8 +43,11 @@ class Savegame(object):
             player.fromJson(saveFile.readline())
             for line in saveFile.readlines():
                 tmp = Block.Block()
-                tmp.fromJson(line)
-                world.setBlock(tmp)
+                try:
+                    tmp.load(json.loads(line))
+                    world.setBlock(tmp)
+                except Exception as e:
+                    log.error("Couldn't load block froms string: {}".format(line))
         except Exception, e:
             log.error('loading failed: %s' % (e,))
             return None

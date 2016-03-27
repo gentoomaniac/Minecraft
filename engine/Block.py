@@ -1,7 +1,7 @@
 import json
-import logging
 
 import Materials
+import logger as l
 
 class Block(object):
     """ will hold a block object
@@ -9,8 +9,6 @@ class Block(object):
     """
 
     def __init__(self, position=None, material=None, isTop=True):
-        self.log = logging.getLogger("Block")
-
         # pyglet `VertextList` for shown blocks
         self._vertex = None
         self._position = position
@@ -22,16 +20,11 @@ class Block(object):
 
 
     def destroy(self):
-        try:
+        if self._vertex:
             self._vertex.delete()
-        except Exception, e:
-            self.log.debug("tried to delete non existing vertex")
 
     def decreaseLife(self, step=1):
-        try:
-            self._life -= step
-        except TypeError, e:
-            self.log.debug("%s - type: %s" % (str(e), type(self._life)))
+        self._life -= step
 
     def isAlive(self):
         if self._life > 0:
@@ -77,17 +70,16 @@ class Block(object):
             'material': self._material.name,
             'life': self._life,
             'isTop': self._isTop,
-            'visible': self._isVisible
             }
         return json.dumps(out)
 
-    def fromJson(self, data):
+    def load(self, data):
         materialFactory = Materials.MaterialFactory.Instance()
-        obj = json.loads(data)
-        self._position = tuple(obj['position'])
-        self._material = materialFactory.getMaterial(obj['material'])
-        self._isTop = obj['isTop']
-        self._life = obj['life']
+
+        self._position = tuple(data['position'])
+        self._material = materialFactory.getMaterial(data['material'])
+        self._isTop = data['isTop']
+        self._life = data['life']
 
 
 FACES = [

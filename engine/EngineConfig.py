@@ -10,13 +10,12 @@ class EngineConfig(object):
 
     """
 
-    # app information
-    APP_NAME = u'PyCraft'
-    APP_VERSION = u'0.1'
-
-    CONFIG_PATH = 'ressources/engine.conf'
-
     def __init__(self):
+        # app information
+        self.APP_NAME = u'PyCraft'
+        self.APP_VERSION = u'0.1'
+
+        self.CONFIG_PATH = 'ressources/engine.conf.json'
 
         self.log = logging.getLogger('Config')
         self._path = '.'
@@ -67,13 +66,13 @@ class EngineConfig(object):
     def loadConfig(self):
         self.log.debug('loading config')
         try:
-            content = open(EngineConfig.CONFIG_PATH, 'r').read()
-            try:
-                self.log.debug('parsing config')
-                self._configSettings.update(json.loads(content))
-                self.log.debug(json.dumps(self._configSettings))
-            except Exception, e:
-                self.log.error('Error parsing config: %s' % (str(e),))
+            with open(self.CONFIG_PATH, 'r').read() as conf:
+                try:
+                    self.log.debug('parsing config')
+                    self._configSettings.update(json.loads(conf))
+                    self.log.debug(json.dumps(self._configSettings))
+                except Exception, e:
+                    self.log.error('Error parsing config: %s' % (str(e),))
         except Exception, e:
             self.log.error('Error loading config: %s' % (str(e),))
             #TODO: create empty config
@@ -81,9 +80,9 @@ class EngineConfig(object):
 
     def saveConfig(self):
         try:
-            conf = open(EngineConfig.CONFIG_PATH, 'w')
-            conf.write(json.dumps(self._configSettings))
-            conf.close()
-            self.log.debug('config written in %s' % (EngineConfig.CONFIG_PATH,))
+           with open(self.CONFIG_PATH, 'w') as conf:
+                conf.write(json.dumps(self._configSettings))
+                conf.close()
+                self.log.debug('config written in %s' % (self.CONFIG_PATH,))
         except Exception, e:
             self.log.error('Error saving config: %s' % (str(e),))

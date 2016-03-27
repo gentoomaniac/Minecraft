@@ -1,5 +1,20 @@
 import logging
 
+def getLogger(name, level=logging.DEBUG):
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+
+    # fileHandler = logging.FileHandler("debug.log")
+    # fileHandler.setFormatter(logFormatter)
+    # logger.addHandler(fileHandler)
+
+    consoleHandler = logging.StreamHandler()
+    consoleHandler.setFormatter(logFormatter)
+    logger.addHandler(consoleHandler)
+
+    return logger
+
 def functionLogging(fn):
     """ prepare logging obkect
     """

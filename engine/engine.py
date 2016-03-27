@@ -1,8 +1,4 @@
 import math
-import random
-import time
-import traceback
-import logging
 
 import pyglet
 from pyglet.window import key, mouse
@@ -16,6 +12,7 @@ import EngineConfig as EC
 import Player
 import Model
 import UI
+import logger as l
 
 
 class Core(pyglet.window.Window):
@@ -24,7 +21,7 @@ class Core(pyglet.window.Window):
     """
 
     def __init__(self, *args, **kwargs):
-        self.log = logging.getLogger("Core")
+        self.log = l.getLogger("Core")
         # get config object
         self.conf = EC.EngineConfig.Instance()
 

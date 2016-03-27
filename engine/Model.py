@@ -2,8 +2,6 @@ import logging
 import time
 
 import pyglet
-from pyglet.graphics import TextureGroup
-from pyglet import image
 from collections import deque
 from pyglet.gl import *
 
@@ -14,6 +12,7 @@ import World
 import EngineConfig as EC
 import Materials
 import Player
+import logger as l
 
 TEXTURE_PATH = 'ressources/texture.png'
 
@@ -21,7 +20,7 @@ class Model(object):
 
     def __init__(self):
 
-        self.log = logging.getLogger("Model")
+        self.log = l.getLogger('model')
 
         self.conf = EC.EngineConfig.Instance()
 

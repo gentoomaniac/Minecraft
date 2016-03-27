@@ -18,15 +18,16 @@ from docopt import docopt
 
 import engine.EngineConfig as EC
 import engine.engine as Engine
+import logger as l
 
 def main():
     """ prepare logging object
     """
-    logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(levelname)s\t%(name)s\t: %(message)s',
-                    datefmt='%a, %d %b %Y %H:%M:%S',
-                    filename='debug.log')
-    log = logging.getLogger(__name__)
+    # logging.basicConfig(level=logging.DEBUG,
+    #                 format='%(asctime)s %(levelname)s\t%(name)s\t: %(message)s',
+    #                 datefmt='%a, %d %b %Y %H:%M:%S',
+    #                 filename='debug.log')
+    log = l.getLogger('main')
 
     log.debug(' #################### Starting ####################')
 
