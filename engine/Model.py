@@ -165,9 +165,8 @@ class Model(object):
         for dx, dy, dz in Block.FACES:
             if not self.world.existsBlockAt((x + dx, y + dy, z + dz)):
                 if toPlayer:
-                    
-                isExposed = True
-                break
+                    isExposed = True
+                    break
         
         return isExposed
 

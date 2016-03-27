@@ -1,6 +1,9 @@
 *.pyc
 *.log
 
+# Project files #
+.idea/
+
 # OS generated files #
 ######################
 .DS_Store
