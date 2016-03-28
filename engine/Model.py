@@ -255,24 +255,9 @@ class Model(object):
 
         """
         if immediate:
-            self._show_block(position)
-        else:
-            self._enqueue(self._show_block, position)
-
-
-    def _show_block(self, position):
-        """ Private implementation of the `show_block()` method.
-
-        Parameters
-        ----------
-        position : tuple of len 3
-            The (x, y, z) position of the block to show.
-        """
-        x, y, z = position
-        try:
             self._paint_block(position)
-        except Exception, e:
-            self.log.error("Showing block at %s failed: %s" % (position, e))
+        else:
+            self._enqueue(self._paint_block, position)
             
     def _paint_block(self, position):
         """ Creates vertexes for the block.
