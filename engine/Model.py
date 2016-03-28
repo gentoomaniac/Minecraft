@@ -230,11 +230,13 @@ class Model(object):
         x, y, z = position
         for dx, dy, dz in Block.FACES:
             key = (x + dx, y + dy, z + dz)
+            self.log.debug("Check neighbour at {}".format(key))
+
             if not self.world.existsBlockAt(key):
                 continue
             if self.exposed(key):
-                if not self.exposed(position):
-                    self.show_block(key)
+                self.log.debug("Neighbour block is exposed...")
+                self.show_block(key)
             else:
                 if self.exposed(position):
                     self.hide_block(key)
@@ -285,7 +287,6 @@ class Model(object):
             block = self.world.getBlock(position)
             
             if block.getVertex():
-                self.log.debug('Block at %s allready visible. This indicates an error!' % (position,))
                 return
             
             vertex_data = Transform.cube_vertices(x, y, z, 0.5)
