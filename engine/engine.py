@@ -572,7 +572,7 @@ class Core(pyglet.window.Window):
         ## We need to enable this again as we now have partly transparent blocks
         # Enable culling (not rendering) of back-facing facets -- facets that aren't
         # visible to you.
-        #glEnable(GL_CULL_FACE)
+        glEnable(GL_CULL_FACE)
 
         self.setup_fog()
         pyglet.app.run()

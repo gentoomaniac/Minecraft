@@ -230,15 +230,13 @@ class Model(object):
         x, y, z = position
         for dx, dy, dz in Block.FACES:
             key = (x + dx, y + dy, z + dz)
-            self.log.debug("Check neighbour at {}".format(key))
 
             if not self.world.existsBlockAt(key):
                 continue
             if self.exposed(key):
-                self.log.debug("Neighbour block is exposed...")
                 self.show_block(key)
             else:
-                if self.exposed(position):
+                if not self._materialFactory.getMaterial(self.world.getBlock(position).getMaterial()).transparent:
                     self.hide_block(key)
 
 
@@ -348,7 +346,7 @@ class Model(object):
         self.log.debug("Sector switch from %s to %s" % (before, after))
         before_set = set()
         after_set = set()
-        # probaby # of sectors to show
+        # probably # of sectors to show
         pad = 4
         for dx in xrange(-pad, pad + 1):
             for dy in xrange(-pad, pad + 1):

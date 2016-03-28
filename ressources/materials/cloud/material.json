@@ -16,5 +16,6 @@
             }
         }
     },
-    "clipping": false
+    "clipping": false,
+    "transparent": true
 }

@@ -18,6 +18,7 @@ class Material(object):
         self.sustain = 0
         self.textureGroup = None
         self.clipping = True
+        self.transparent = False
 
 
 @Singleton
@@ -70,6 +71,7 @@ class MaterialFactory(object):
                     self._materials[jsonObj['name']].name = jsonObj['name']
                     self._materials[jsonObj['name']].sustain = int(jsonObj['sustain'])
                     self._materials[jsonObj['name']].clipping = bool(jsonObj['clipping'])
+                    self._materials[jsonObj['name']].transparent = bool(jsonObj['transparent'])
                     self._materials[jsonObj['name']].texture['top'] = Transform.tex_coords(
                         tuple(jsonObj['texture']['mapping']['top']['top']),
                         tuple(jsonObj['texture']['mapping']['top']['bottom']),

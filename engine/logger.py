@@ -3,7 +3,7 @@ import logging
 def getLogger(name, level=logging.DEBUG):
     logger = logging.getLogger(name)
     logger.setLevel(level)
-    logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    logFormatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
 
     # fileHandler = logging.FileHandler("debug.log")
     # fileHandler.setFormatter(logFormatter)
