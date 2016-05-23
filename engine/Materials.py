@@ -1,10 +1,11 @@
-import logging
 import json
 import os
 
 import Transform
 import EngineConfig as EC
 import TextureFactory as TF
+import logger as l
+
 from Singleton import *
 
 class Material(object):
@@ -25,7 +26,7 @@ class Material(object):
 class MaterialFactory(object):
 
     def __init__(self):
-        self.log = logging.getLogger('MaterialFactory')
+        self.log = l.getLogger('MaterialFactory')
         # get config object
         conf = EC.EngineConfig.Instance()
         self._materialPath = os.path.join(conf.getConfValue('baseDir'),

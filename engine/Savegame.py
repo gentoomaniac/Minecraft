@@ -14,7 +14,7 @@ class Savegame(object):
     """ This class handles a savgame
 
     """
-    NAME = "save.gz"
+    NAME = "save.old.gz"
 
     @staticmethod
     def save(world, player):
@@ -32,7 +32,7 @@ class Savegame(object):
             log.error('saving failed: %s' % (str(e),))
 
     @staticmethod
-    def load(name="save.gz"):
+    def load(name="save.old.gz"):
         log = l.getLogger('load game')
         log.debug('loading game ...')
         world = World.World()

@@ -1,7 +1,6 @@
 import json
 
 import Materials
-import logger as l
 
 class Block(object):
     """ will hold a block object

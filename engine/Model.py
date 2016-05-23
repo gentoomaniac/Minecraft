@@ -186,8 +186,9 @@ class Model(object):
         self.world.addBlock(position, material)
         self.sectors.setdefault(Transform.sectorize(position, self.conf.getConfValue('sectorSize')), []).append(position)
         
-        # hide newly hidden blocks 
-        self.check_neighbors(position)
+        # hide newly hidden blocks
+        transparent = self._materialFactory.getMaterial(self.world.getBlock(position).getMaterial()).transparent
+        self.check_neighbors(position, transparent)
         
         if immediate:
             if self.exposed(position):
@@ -208,36 +209,38 @@ class Model(object):
         
         # if block is dead hide it and remove it
         if not self.world.getBlock(position).isAlive():
+            transparent = self._materialFactory.getMaterial(self.world.getBlock(position).getMaterial()).transparent
             if immediate:
                 self.hide_block(position)
                 
             self.world.removeBlock(position)
             self.sectors[Transform.sectorize(position, self.conf.getConfValue('sectorSize'))].remove(position)
-            
-            # after removing show newly exposed blocks
-            self.check_neighbors(position)
+
+            # show newly exposed blocks
+            self.check_neighbors(position, transparent)
+
         else:
             self.world.getBlock(position).decreaseLife()
 
 
-    def check_neighbors(self, position):
+    def check_neighbors(self, position, transparent=False):
         """ Check all blocks surrounding `position` and ensure their visual
         state is current. This means hiding blocks that are not exposed and
         ensuring that all exposed blocks are shown. Usually used after a block
         is added or removed.
 
         """
+        # if the block is transparent we don't want to hide anything to avoid graphic bugs
         x, y, z = position
         for dx, dy, dz in Block.FACES:
             key = (x + dx, y + dy, z + dz)
 
             if not self.world.existsBlockAt(key):
                 continue
-            if self.exposed(key):
+            if transparent or self.exposed(key):
                 self.show_block(key)
             else:
-                if not self._materialFactory.getMaterial(self.world.getBlock(position).getMaterial()).transparent:
-                    self.hide_block(key)
+                self.hide_block(key)
 
 
     def show_block(self, position, immediate=False):

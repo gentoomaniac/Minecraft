@@ -1,6 +1,6 @@
 {
     "name": "Stone",
-    "sustain": 4,
+    "sustain": 3,
     "texture": {
         "ressource": "texture.png",
         "mapping": {
